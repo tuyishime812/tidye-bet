@@ -516,6 +516,13 @@ code {
   }
 }
 
+@media (max-width: 767.98px) {
+  .info-board {
+    height: 55vh !important;
+    padding-top: 10px !important;
+  }
+}
+
 .info-board {
   height: 100%;
   flex-grow: 0;
