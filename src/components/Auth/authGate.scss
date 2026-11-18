@@ -1,0 +1,493 @@
+// ============================================================================
+// AUTH GATE  -  full-bleed login / register dialog
+// ----------------------------------------------------------------------------
+// Layout mirrors the Abale Bet mockup (branded panel + form), but the accent is
+// the project teal (#00d4aa), not the mockup's amber. Everything is scoped
+// under `.auth-gate` and prefixed `auth-gate__` so it never collides with the
+// app's global index.scss.
+// ============================================================================
+
+.auth-gate {
+  --ag-accent: #00d4aa;
+  --ag-accent-2: #00a885;
+  --ag-blue: #0a84ff;
+  --ag-ink: #0b0f12;
+  --ag-side: #0d1119;
+  --ag-line: rgba(255, 255, 255, 0.13);
+  --ag-txt: #eef2ee;
+  --ag-mut: #93a1ad;
+  --ag-red: #ff5a4d;
+
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  background: rgba(5, 5, 12, 0.82);
+  backdrop-filter: blur(7px);
+  animation: auth-gate-fade 0.16s ease;
+}
+
+// Re-assert Barlow inside the dialog (the global stylesheet forces Roboto).
+.auth-gate,
+.auth-gate * {
+  font-family: Barlow, system-ui, sans-serif;
+}
+
+@keyframes auth-gate-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.auth-gate__shell {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ag-side);
+  animation: auth-gate-rise 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes auth-gate-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// BRAND PANEL
+// ---------------------------------------------------------------------------
+
+.auth-gate__brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 44px clamp(28px, 4.5vw, 72px);
+  overflow: hidden;
+  color: #eaf3ee;
+  background: linear-gradient(150deg, #08302a 0%, #10253a 52%, #241a4d 100%);
+
+  // Decorative ring, echoing the mockup.
+  &::after {
+    content: "";
+    position: absolute;
+    width: 460px;
+    height: 460px;
+    right: -170px;
+    bottom: -170px;
+    border: 3px solid rgba(255, 255, 255, 0.07);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+}
+
+.auth-gate__logo {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-gate__logo-mark {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0, 212, 170, 0.35);
+}
+
+.auth-gate__logo-text {
+  font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #f2f7f3;
+
+  strong {
+    color: var(--ag-accent);
+    margin-left: 4px;
+  }
+}
+
+.auth-gate__brand-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 34ch;
+}
+
+.auth-gate__headline {
+  margin: 0 0 16px;
+  font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+  font-size: clamp(40px, 5vw, 68px);
+  font-weight: 800;
+  line-height: 0.96;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+
+  em {
+    font-style: normal;
+    color: var(--ag-accent);
+  }
+}
+
+.auth-gate__lead {
+  margin: 0;
+  max-width: 42ch;
+  color: #cddbd4;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.auth-gate__perks {
+  list-style: none;
+  margin: 26px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #dfe8e2;
+    font-size: 15px;
+  }
+
+  span {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    background: rgba(0, 212, 170, 0.16);
+    color: var(--ag-accent);
+    font-weight: 700;
+  }
+}
+
+.auth-gate__legal {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: #9fb0a8;
+  font-size: 12px;
+}
+
+// ---------------------------------------------------------------------------
+// FORM PANEL
+// ---------------------------------------------------------------------------
+
+.auth-gate__side {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background: var(--ag-side);
+}
+
+.auth-gate__box {
+  width: min(430px, 100%);
+}
+
+.auth-gate__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: #b9bfd0;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+
+  &:hover {
+    background: rgba(255, 90, 77, 0.2);
+    color: var(--ag-red);
+  }
+}
+
+.auth-gate__title {
+  margin: 0;
+  font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  color: var(--ag-txt);
+}
+
+.auth-gate__sub {
+  margin: 6px 0 22px;
+  color: var(--ag-mut);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.auth-gate__seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+  margin-bottom: 18px;
+  border: 1px solid var(--ag-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+
+  button {
+    padding: 10px;
+    border: 0;
+    border-radius: 9px;
+    background: none;
+    color: var(--ag-mut);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+
+    &.active {
+      background: var(--ag-accent);
+      color: #03211b;
+    }
+
+    &:not(.active):hover {
+      color: var(--ag-txt);
+    }
+  }
+}
+
+.auth-gate__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-gate__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  > span {
+    font-size: 13px;
+    font-weight: 600;
+    color: #c8d3cd;
+  }
+
+  input {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1.5px solid var(--ag-line);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--ag-txt);
+    font-size: 14px;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &::placeholder {
+      color: #6b7885;
+      font-weight: 400;
+    }
+
+    &:focus {
+      border-color: var(--ag-accent);
+      box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.18);
+    }
+  }
+}
+
+.auth-gate__optional {
+  color: #6d7285;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.auth-gate__password {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  input {
+    padding-right: 66px;
+  }
+
+  button {
+    position: absolute;
+    right: 8px;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--ag-accent);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:hover {
+      color: #67e8d0;
+    }
+  }
+}
+
+.auth-gate__meter {
+  height: 5px;
+  margin-top: 2px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.09);
+  overflow: hidden;
+
+  i {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 3px;
+    transition: width 0.3s ease, background 0.3s ease;
+  }
+}
+
+.auth-gate__hint {
+  margin: -4px 0 0;
+  color: var(--ag-mut);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.auth-gate__terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 4px;
+  color: #c8d3cd;
+  font-size: 13px;
+  line-height: 1.45;
+  cursor: pointer;
+
+  input {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    accent-color: var(--ag-accent);
+  }
+}
+
+.auth-gate__error {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 123, 123, 0.34);
+  border-radius: 9px;
+  background: rgba(255, 90, 77, 0.12);
+  color: #ff9b9b;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.auth-gate__submit {
+  width: 100%;
+  margin-top: 4px;
+  padding: 15px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--ag-accent), var(--ag-accent-2));
+  color: #03211b;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.auth-gate__switch {
+  margin: 18px 0 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ag-mut);
+
+  button {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--ag-accent);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:hover {
+      color: #67e8d0;
+      text-decoration: underline;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// RESPONSIVE
+// ---------------------------------------------------------------------------
+
+@media (max-width: 900px) {
+  .auth-gate__shell {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .auth-gate__brand {
+    padding: 26px 24px 30px;
+    gap: 16px;
+  }
+
+  .auth-gate__headline {
+    margin-bottom: 10px;
+    font-size: 46px;
+  }
+
+  .auth-gate__perks,
+  .auth-gate__legal {
+    display: none;
+  }
+
+  .auth-gate__side {
+    place-items: start center;
+    padding: 28px 20px 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-gate__title {
+    font-size: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-gate,
+  .auth-gate__shell {
+    animation: none;
+  }
+}

@@ -1,0 +1,29 @@
+              <div className="modal-body m-body-bg">
+                <div className="youtube">
+                  <div className="embed-responsive">
+                    <iframe
+                      title="tutorial"
+                      className="embed-responsive-item"
+                      src="https://www.youtube.com/embed/PZejs3XDCSY?playsinline=1"
+                    />
+                  </div>
+                </div>
+                <div className="step">
+                  <div className="bullet">01</div>
+                  <p>
+                    Place your bet and wait for the round to start.
+                  </p>
+                </div>
+                <div className="step">
+                  <div className="bullet bullet-2">02</div>
+                  <p>
+                    Watch the multiplier increase as the plane takes off. Your winnings grow with every second!
+                  </p>
+                </div>
+                <div className="step">
+                  <div className="bullet bullet-3">03</div>
+                  <p>
+                    Cash out before the plane flies away to secure your winnings!
+                  </p>
+                </div>
+              </div>
