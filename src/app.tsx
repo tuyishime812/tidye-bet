@@ -142,7 +142,6 @@ function App() {
 
   return (
     <div className={`main-container${isAdmin ? " main-container--admin" : ""}`}>
-  `? wait need to keep exact indentation. Let us be careful.} Actually easier: replace block properly.
       {showUnityLoader && (
         <div className="myloading">
           <div className="loading-container">

@@ -44,6 +44,10 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
+// Trust exactly one proxy hop (Nginx on loopback). Without this, req.ip is the
+// proxy address and express-rate-limit refuses to key on X-Forwarded-For.
+app.set('trust proxy', 1);
+
 // Fail fast on weak/missing secrets, before any traffic is accepted.
 //
 // Admin identity is database-backed by default (SCHEMA.sql SECTION 7b). The env
@@ -996,7 +1000,7 @@ const PORT = process.env.PORT || 5001;
 // Verify the database BEFORE accepting traffic. In production a failure here
 // exits the process rather than silently degrading to in-memory balances.
 verifyDatabaseConnection().then(() => {
-  server.listen(PORT, () => {
+  server.listen(PORT, process.env.HOST || '0.0.0.0', () => {
     const usingDb = isSupabaseAvailable();
     console.log(`\n🚀 Server running on port ${PORT}`);
     console.log(`📡 API: http://localhost:${PORT}/api`);
