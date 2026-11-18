@@ -336,8 +336,10 @@ const Context = React.createContext<ContextType>(null!);
 let socket: any = null;
 
 export const callCashOut = (at: number, index: "f" | "s" | "t" | "q") => {
-  // INSTANT cashout - emit immediately
-  let data = { type: index, endTarget: at };
+  // INSTANT cashout - emit immediately. The token lets the server re-attach the
+  // session if this socket lost its authenticate event (reconnect/remount).
+  const authToken = localStorage.getItem("authToken");
+  let data = { type: index, endTarget: at, ...(authToken ? { token: authToken } : {}) };
   socket.emit("cashOut", data);
   // Toast will show from backend response
 };
@@ -608,11 +610,12 @@ export const Provider = ({ children }: any) => {
 
       socket.on('connect', () => {
         console.log('Socket connected:', socket.id);
-        // Authenticate when connected using token from localStorage
+        // Authenticate and join the room using the persisted session.
         const storedToken = localStorage.getItem('authToken');
         if (storedToken) {
           socket.emit('authenticate', storedToken);
         }
+        socket.emit('enterRoom', { token: storedToken });
       });
 
       socket.on('disconnect', () => {
@@ -634,15 +637,31 @@ export const Provider = ({ children }: any) => {
       });
     }
 
-    return () => {
-      if (socket) {
-        socket.off('connect');
-        socket.off('disconnect');
-        socket.off('authenticated');
-      }
-    };
+    // The socket is a singleton for the app's lifetime. Its core listeners are
+    // deliberately not removed: doing so left a re-mounted/reconnected socket
+    // permanently unauthenticated while the UI still showed a logged-in user.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-assert the socket session whenever the UI becomes authenticated and when
+  // the tab regains focus (mobile browsers can suspend sockets in the
+  // background without always reconnecting cleanly).
+  React.useEffect(() => {
+    if (!isAuthenticated) return;
+    const reauth = () => {
+      if (!socket || !socket.connected) return;
+      const token = localStorage.getItem("authToken");
+      if (token) socket.emit("authenticate", token);
+    };
+    reauth();
+    window.addEventListener("focus", reauth);
+    document.addEventListener("visibilitychange", reauth);
+    return () => {
+      window.removeEventListener("focus", reauth);
+      document.removeEventListener("visibilitychange", reauth);
+    };
+  }, [isAuthenticated]);
+
   React.useEffect(function () {
     unityContext.on("GameController", function (message) {
       if (message === "Ready") {
@@ -666,12 +685,6 @@ export const Provider = ({ children }: any) => {
 
   React.useEffect(() => {
     if (!socket) return;
-
-    socket.on("connect", () => {
-      console.log('Socket connected, entering room...');
-      const storedToken = localStorage.getItem('authToken');
-      socket.emit("enterRoom", { token: storedToken });
-    });
 
     socket.on("bettedUserInfo", (bettedUsers: BettedUserType[]) => {
       // REAL-TIME: Show ALL players' bets (including yourself)
@@ -873,8 +886,6 @@ export const Provider = ({ children }: any) => {
     });
 
     return () => {
-      socket.off("connect");
-      socket.off("disconnect");
       socket.off("enterRoom");
       socket.off("bettedUserInfo");
       socket.off("myBetState");
@@ -937,6 +948,9 @@ export const Provider = ({ children }: any) => {
             betAmount: betAmount,
             target: panel?.target || 2,
             type: panelKey,
+            // Fallback session proof for a socket whose authenticate event was
+            // missed; the server ignores it once socket.userId is set.
+            token: localStorage.getItem("authToken") || undefined,
             auto: panel?.auto || false,
             // Auto-cashout is settled by the authoritative game tick on the
             // server. A browser tab that is backgrounded or throttled can miss a

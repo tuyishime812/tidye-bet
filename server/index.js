@@ -702,52 +702,74 @@ io.on('connection', (socket) => {
     return true;
   }
 
+  /**
+   * Resolve a session token onto this socket.
+   *
+   * Also used as a fallback by money events: a browser socket can miss its
+   * initial `authenticate` (reconnect race, tab restore, remount) while the
+   * REST session is still valid, which used to surface as "Please log in"
+   * even though the player was signed in.
+   */
+  async function authenticateSocket(socketRef, token) {
+    if (!token || typeof token !== 'string') return { ok: false, reason: 'no_token' };
+
+    const decoded = verifyUserToken(token);
+    if (!decoded) return { ok: false, reason: 'invalid_token' };
+
+    let user = null;
+    if (!isSupabaseAvailable()) {
+      user = memoryStore.findUserById(decoded.userId);
+    } else {
+      const supabase = getSupabase();
+      const { data } = await supabase.from('users').select('*').eq('id', decoded.userId).limit(1);
+      user = data && data.length ? data[0] : null;
+    }
+
+    if (!user) return { ok: false, reason: 'user_not_found' };
+
+    // A suspended account must not be able to authenticate a socket, even if
+    // it still holds a valid, unexpired token from before the ban.
+    if (user.is_banned) return { ok: false, reason: 'banned' };
+
+    socketRef.userId = user.id;
+    socketRef.userName = user.user_name;
+    socketRef.avatar = user.avatar;
+
+    // A reconnect gets a new socket id. Re-attach any bet the player placed
+    // before the drop so they can still cash it out (or see it lose) instead
+    // of the stake silently vanishing. Idempotent, so safe on every re-auth.
+    game.rebindSocket(socketRef);
+    return { ok: true, user };
+  }
+
   // Handle authentication
   socket.on('authenticate', async (token) => {
     try {
-      if (!token || typeof token !== 'string') {
+      // Logging out (or an expired session) must drop the socket identity too,
+      // otherwise the previous account stays able to bet on this connection.
+      if (!token) {
+        socket.userId = undefined;
+        socket.userName = undefined;
+        socket.avatar = undefined;
         socket.emit('authenticated', { success: false, message: 'No token provided' });
         return;
       }
 
-      const decoded = verifyUserToken(token);
-      if (!decoded) {
-        socket.emit('authenticated', { success: false, message: 'Invalid or expired session' });
+      const result = await authenticateSocket(socket, token);
+      if (!result.ok) {
+        const message =
+          result.reason === 'no_token'
+            ? 'No token provided'
+            : result.reason === 'banned'
+              ? 'This account has been suspended. Please contact support.'
+              : result.reason === 'user_not_found'
+                ? 'User not found'
+                : 'Invalid or expired session';
+        socket.emit('authenticated', { success: false, message });
         return;
       }
 
-      let user = null;
-      if (!isSupabaseAvailable()) {
-        user = memoryStore.findUserById(decoded.userId);
-      } else {
-        const supabase = getSupabase();
-        const { data } = await supabase.from('users').select('*').eq('id', decoded.userId).limit(1);
-        user = data && data.length ? data[0] : null;
-      }
-
-      if (!user) {
-        socket.emit('authenticated', { success: false, message: 'User not found' });
-        return;
-      }
-
-      // A suspended account must not be able to authenticate a socket, even if
-      // it still holds a valid, unexpired token from before the ban.
-      if (user.is_banned) {
-        socket.emit('authenticated', {
-          success: false,
-          message: 'This account has been suspended. Please contact support.'
-        });
-        return;
-      }
-
-      socket.userId = user.id;
-      socket.userName = user.user_name;
-      socket.avatar = user.avatar;
-
-      // A reconnect gets a new socket id. Re-attach any bet the player placed
-      // before the drop so they can still cash it out (or see it lose) instead
-      // of the stake silently vanishing.
-      game.rebindSocket(socket);
+      const user = result.user;
 
       socket.emit('authenticated', {
         success: true,
@@ -779,6 +801,11 @@ io.on('connection', (socket) => {
    * balance debit entirely, letting anyone bet with a zero balance.
    */
   socket.on('playBet', async (data) => {
+    // The browser attaches its session token to the bet so a socket that lost
+    // its authenticate event can still act on a valid login.
+    if (!socket.userId && data && typeof data.token === 'string') {
+      await authenticateSocket(socket, data.token);
+    }
     if (!requireUser(socket)) return;
     if (!betLimiterSocket.check(`${clientIp}:bet`)) {
       socket.emit('error', { message: 'Too many bets, slow down', index: data && data.type });
@@ -798,6 +825,9 @@ io.on('connection', (socket) => {
 
   // Cash out
   socket.on('cashOut', async (data) => {
+    if (!socket.userId && data && typeof data.token === 'string') {
+      await authenticateSocket(socket, data.token);
+    }
     if (!requireUser(socket)) return;
     if (!betLimiterSocket.check(`${clientIp}:cashout`)) {
       socket.emit('error', { message: 'Too many requests', index: data && data.type });
