@@ -368,10 +368,85 @@ async function verify(txRef, opts = {}) {
     };
   } catch (error) {
     const status = error && error.response && error.response.status;
-    // 404 means PayChangu has no such transaction yet; treat as pending, not
-    // as a successful payment.
-    if (status === 404) {
-      return { ok: true, paid: false, status: 'not_found', amountMinor: null, httpStatus: 404 };
+    const body = error && error.response && error.response.data;
+    const message = String(
+      (body && (body.message || (body.data && body.data.message))) || ''
+    ).toLowerCase();
+    // 404 - or a 400 "Payment link not found" for Direct MoMo charges - means
+    // PayChangu has no checkout record for this reference yet. Treat as
+    // pending, never as a successful payment.
+    if (status === 404 || (status === 400 && message.includes('not found'))) {
+      return { ok: true, paid: false, status: 'not_found', amountMinor: null, httpStatus: status };
+    }
+    return { ok: false, reason: 'gateway_error', httpStatus: status };
+  }
+}
+
+/**
+ * Query a Direct Mobile Money charge by its charge id.
+ *
+ * PayChangu's /verify-payment endpoint explicitly excludes Direct MoMo charges
+ * (it answers 400 "Payment link not found"), so those must be checked with the
+ * charge-verification endpoint instead.
+ *
+ * @param {string} chargeId
+ * @param {object} [opts] { http }
+ * @returns {Promise<{ok:boolean, paid?:boolean, status?:string,
+ *   amountMinor?:number|null, currency?:string, reference?:string|null,
+ *   reason?:string, httpStatus?:number}>}
+ */
+async function verifyMobileMoney(chargeId, opts = {}) {
+  const http = opts.http || axios;
+  if (!isConfigured()) return { ok: false, reason: 'not_configured' };
+  if (!chargeId || typeof chargeId !== 'string') return { ok: false, reason: 'invalid_reference' };
+
+  try {
+    const res = await http.get(
+      `${BASE_URL}/mobile-money/payments/${encodeURIComponent(chargeId)}/verify`,
+      {
+        headers: { Authorization: `Bearer ${secretKey()}`, Accept: 'application/json' },
+        timeout: timeoutMs()
+      }
+    );
+
+    const body = res && res.data;
+    const data = (body && body.data) || null;
+    if (!data) return { ok: false, reason: 'malformed_response', httpStatus: res && res.status };
+
+    const dataStatus = String(data.status || '').toLowerCase();
+    const topStatus = String((body && body.status) || '').toLowerCase();
+    const status = dataStatus || topStatus;
+    // `data.status` is the payment state ('success'/'pending'/'failed'); the
+    // top-level status only says the API call worked, so prefer the former.
+    const paid = dataStatus
+      ? dataStatus === 'success' || dataStatus === 'successful'
+      : topStatus === 'successful';
+    const rawCurrency = data.currency ? String(data.currency).toUpperCase() : null;
+    // Direct charges report the local currency as "MK"; the rest of the app
+    // (and the settlement guard) uses the ISO code "MWK".
+    const currency = rawCurrency === 'MK' ? 'MWK' : rawCurrency;
+
+    return {
+      ok: true,
+      paid,
+      status,
+      amountMinor: toMinor(data.amount),
+      currency,
+      reference: data.trans_id
+        ? String(data.trans_id)
+        : data.ref_id
+          ? String(data.ref_id)
+          : null,
+      httpStatus: res && res.status
+    };
+  } catch (error) {
+    const status = error && error.response && error.response.status;
+    const body = error && error.response && error.response.data;
+    const message = String(
+      (body && (body.message || (body.data && body.data.message))) || ''
+    ).toLowerCase();
+    if (status === 404 || (status === 400 && message.includes('not found'))) {
+      return { ok: true, paid: false, status: 'not_found', amountMinor: null, httpStatus: status };
     }
     return { ok: false, reason: 'gateway_error', httpStatus: status };
   }
@@ -433,5 +508,6 @@ module.exports = {
   initialize,
   initializeMobileMoney,
   verify,
+  verifyMobileMoney,
   validateSettlement
 };

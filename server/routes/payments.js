@@ -594,7 +594,13 @@ router.get('/deposits/:txRef/status', requireAuth, apiRateLimit, async (req, res
       });
     }
 
-    const verification = await paychangu.verify(txRef);
+    let verification = await paychangu.verify(txRef);
+    // Direct Mobile Money charges are invisible to /verify-payment (PayChangu
+    // answers "Payment link not found"), so fall back to charge verification.
+    if (verification.ok && verification.status === 'not_found') {
+      const charge = await paychangu.verifyMobileMoney(txRef);
+      if (charge.ok) verification = charge;
+    }
     if (!verification.ok) {
       // Gateway unreachable: keep the deposit pending so a later poll can
       // settle it. Never mark it failed on a transport error.

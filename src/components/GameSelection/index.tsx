@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { Plane } from "lucide-react";
 import Context from "../../context";
 import "./gameSelection.scss";
 
@@ -63,6 +64,16 @@ export default function GameSelection() {
     };
   }, []);
 
+  // Follow a quadratic flight path from the bottom-left to the top-right so
+  // the plane visibly climbs with the multiplier.
+  const progress = Math.min(1, Math.max(0, (multiplier - 1) / 7));
+  const inv = 1 - progress;
+  const planeX = inv * inv * 8 + 2 * inv * progress * 45 + progress * progress * 86;
+  const planeY = inv * inv * 82 + 2 * inv * progress * 78 + progress * progress * 16;
+  const tangentX = 2 * inv * (45 - 8) + 2 * progress * (86 - 45);
+  const tangentY = 2 * inv * (78 - 82) + 2 * progress * (16 - 78);
+  const planeAngle = (Math.atan2(tangentY, tangentX) * 180) / Math.PI;
+
   const handleEnterAviator = () => {
     if (isAuthenticated) {
       navigate("/aviator");
@@ -84,6 +95,37 @@ export default function GameSelection() {
           </p>
 
           <div className="aviator-lobby__preview" aria-hidden="true">
+            <div className="aviator-lobby__sky">
+              <svg className="aviator-lobby__trail" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="aviatorTrailGradient" x1="0" y1="1" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#ffb627" stopOpacity="0.15" />
+                    <stop offset="100%" stopColor="#ff6a4d" stopOpacity="0.9" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M8 82 Q45 78 86 16"
+                  fill="none"
+                  stroke="url(#aviatorTrailGradient)"
+                  strokeWidth="2"
+                  strokeDasharray="1"
+                  strokeDashoffset={1 - progress}
+                  strokeLinecap="round"
+                  pathLength={1}
+                  vectorEffect="non-scaling-stroke"
+                />
+              </svg>
+              <span className="aviator-lobby__cloud aviator-lobby__cloud--a" />
+              <span className="aviator-lobby__cloud aviator-lobby__cloud--b" />
+              <span
+                className={crashed ? "aviator-lobby__plane aviator-lobby__plane--crash" : "aviator-lobby__plane"}
+                style={{ left: `${planeX}%`, bottom: `${100 - planeY}%` }}
+              >
+                <span className="aviator-lobby__plane-inner" style={{ transform: `rotate(${planeAngle}deg)` }}>
+                  <Plane size={30} strokeWidth={1.8} />
+                </span>
+              </span>
+            </div>
             <div className={crashed ? "aviator-lobby__mult aviator-lobby__mult--crash" : "aviator-lobby__mult"}>
               {crashed ? `Flew away ${multiplier.toFixed(2)}x` : `${multiplier.toFixed(2)}x`}
             </div>

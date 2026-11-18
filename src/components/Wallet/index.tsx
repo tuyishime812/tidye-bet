@@ -94,6 +94,10 @@ export default function Wallet() {
   const [depositSession, setDepositSession] = React.useState<DepositSession | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = React.useState(false);
   const [paymentStatus, setPaymentStatus] = React.useState<"loading" | "ready" | "success" | "failed">("loading");
+  // After a few seconds of waiting the spinner stops; the modal then shows a
+  // calmer "still confirming" state so it never looks stuck forever.
+  const [confirmSlow, setConfirmSlow] = React.useState(false);
+  const [depositCheckNonce, setDepositCheckNonce] = React.useState(0);
   const depositPresets = [1000, 5000, 10000, 50000];
 
   const [withdrawAmount, setWithdrawAmount] = React.useState("");
@@ -163,6 +167,16 @@ export default function Wallet() {
   }, [walletOpen, isAuthenticated]);
 
   React.useEffect(() => {
+    if (!paymentModalOpen || paymentStatus !== "ready") {
+      setConfirmSlow(false);
+      return;
+    }
+    setConfirmSlow(false);
+    const timer = window.setTimeout(() => setConfirmSlow(true), 8000);
+    return () => window.clearTimeout(timer);
+  }, [paymentModalOpen, paymentStatus, depositSession?.txRef]);
+
+  React.useEffect(() => {
     if (!depositSession || !isAuthenticated) return;
     if (depositSession.status !== "PENDING") return;
     const txRef = depositSession.txRef;
@@ -214,12 +228,12 @@ export default function Wallet() {
       if (!cancelled) timer = window.setTimeout(tick, 1500);
     };
     // Poll quickly so balance updates as soon as gateway confirms.
-    timer = window.setTimeout(tick, 800);
+    timer = window.setTimeout(tick, depositCheckNonce ? 0 : 800);
     return () => {
       cancelled = true;
       if (timer) window.clearTimeout(timer);
     };
-  }, [depositSession, isAuthenticated, loadAll, refreshUser]);
+  }, [depositSession, isAuthenticated, loadAll, refreshUser, depositCheckNonce]);
 
   const startDeposit = async () => {
     const amount = Number(depositAmount.replace(/,/g, ""));
@@ -578,14 +592,40 @@ export default function Wallet() {
                   <>
                     <div className="wd-pay-note">Complete your payment below. We'll confirm automatically once the gateway approves it.</div>
                     <iframe title="Secure payment" src={depositSession.checkoutUrl} className="wd-pay-frame" allow="payment *" />
-                    <div className="wd-pay-foot"><span className="wd-spinner"/> Waiting for confirmation...</div>
+                    <div className="wd-pay-foot">
+                      {confirmSlow ? (
+                        <>
+                          <span>Still waiting for confirmation…</span>
+                          <button type="button" className="wd-check-btn" onClick={() => setDepositCheckNonce((n) => n + 1)}>Check again</button>
+                        </>
+                      ) : (
+                        <><span className="wd-spinner"/> Waiting for confirmation...</>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <div className="wd-pay-state">
-                    <div className="wd-spinner wd-spinner--lg"/>
-                    <div className="wd-pay-big">Check your phone</div>
-                    <p>{depositSession.message || "A payment prompt has been sent to your mobile money number. Enter your PIN on your phone to confirm."}</p>
-                    <div className="wd-pay-foot"><span className="wd-spinner"/> Waiting for confirmation...</div>
+                    {confirmSlow ? (
+                      <div className="wd-pay-wait" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                      </div>
+                    ) : (
+                      <div className="wd-spinner wd-spinner--lg"/>
+                    )}
+                    <div className="wd-pay-big">{confirmSlow ? "Still confirming" : "Check your phone"}</div>
+                    <p>{confirmSlow
+                      ? "If you have already paid, we are waiting for the mobile network to confirm it. This usually takes a moment."
+                      : (depositSession.message || "A payment prompt has been sent to your mobile money number. Enter your PIN on your phone to confirm.")}</p>
+                    <div className="wd-pay-foot">
+                      {confirmSlow ? (
+                        <>
+                          <span>No need to pay again.</span>
+                          <button type="button" className="wd-check-btn" onClick={() => setDepositCheckNonce((n) => n + 1)}>Check again</button>
+                        </>
+                      ) : (
+                        <><span className="wd-spinner"/> Waiting for confirmation...</>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

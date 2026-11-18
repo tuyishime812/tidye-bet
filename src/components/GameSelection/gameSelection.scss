@@ -75,11 +75,71 @@
 
 .aviator-lobby__preview {
   margin: 28px auto 20px;
-  padding: 18px 22px;
+  padding: 14px 16px 18px;
   border-radius: 20px;
   background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
   border: 1px solid rgba(255,255,255,0.1);
   width: min(420px, 100%);
+}
+
+.aviator-lobby__sky {
+  position: relative;
+  height: 150px;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(120% 140% at 15% 100%, rgba(255, 182, 39, 0.12), transparent 60%),
+    linear-gradient(180deg, rgba(18, 24, 64, 0.9), rgba(10, 13, 24, 0.88));
+}
+
+.aviator-lobby__trail {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.aviator-lobby__cloud {
+  position: absolute;
+  width: 84px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  filter: blur(1px);
+}
+
+.aviator-lobby__cloud--a { top: 24%; left: 10%; }
+.aviator-lobby__cloud--b { top: 54%; right: 8%; width: 112px; height: 32px; opacity: 0.7; }
+
+.aviator-lobby__plane {
+  position: absolute;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffb627;
+  transform: translate(-50%, 50%);
+  transition: left 0.12s linear, bottom 0.12s linear;
+  filter: drop-shadow(0 4px 10px rgba(255, 106, 77, 0.35));
+}
+
+.aviator-lobby__plane-inner {
+  display: flex;
+  transition: transform 0.12s linear;
+}
+
+.aviator-lobby__plane--crash {
+  color: #ff6a4d;
+  animation: aviatorPlaneAway 0.8s ease-out forwards;
+}
+
+@keyframes aviatorPlaneAway {
+  0% { opacity: 1; transform: translate(-50%, 50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, 50%) translate(30px, -24px) scale(1.18); }
 }
 
 .aviator-lobby__mult {
@@ -152,6 +212,9 @@
 @media (max-width: 640px) {
   .aviator-lobby__subtitle {
     font-size: 16px;
+  }
+  .aviator-lobby__sky {
+    height: 120px;
   }
   .aviator-lobby__foot {
     font-size: 12px;

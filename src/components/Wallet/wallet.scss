@@ -140,7 +140,10 @@
 .wd-pay-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px; gap: 10px; }
 .wd-pay-note { font-size: 12px; color: #C3CCE0; background: #101828; border: 1px solid #1C2335; border-radius: 10px; padding: 10px 12px; }
 .wd-pay-frame { flex: 1; min-height: 360px; width: 100%; border: 1px solid #1C2335; border-radius: 12px; background: #fff; }
-.wd-pay-foot { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 13px; color: #98A3BC; padding: 4px 0; }
+.wd-pay-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; font-size: 13px; color: #98A3BC; padding: 4px 0; text-align: center; }
+.wd-check-btn { border: 1px solid #2A3550; background: #141B2B; color: #DBE4F7; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: border-color 0.15s ease, color 0.15s ease; }
+.wd-check-btn:hover { border-color: #4C8DFF; color: #FFFFFF; }
+.wd-pay-wait { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #101828; border: 1px solid #1C2335; color: #4C8DFF; }
 .wd-pay-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; color: #98A3BC; padding: 24px; }
 .wd-pay-state p { margin: 0; font-size: 14px; }
 .wd-pay-big { font-size: 20px; font-weight: 600; color: #EEF2FA; }

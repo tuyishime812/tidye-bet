@@ -79,7 +79,7 @@ test('initialize sends the documented payload and returns the checkout URL', asy
     assert.equal(calls[0].payload.currency, 'MWK');
     assert.equal(calls[0].payload.tx_ref, 'pch_' + 'b'.repeat(32));
     assert.equal(calls[0].payload.callback_url, 'https://app.test/payment/return');
-    assert.equal(JSON.parse(calls[0].payload.meta).depositId, 'dep-1');
+    assert.equal(calls[0].payload.meta[0].depositId, 'dep-1');
     assert.equal(calls[0].config.headers.Authorization, `Bearer ${KEY}`);
   });
 });
@@ -145,6 +145,77 @@ test('verify treats a 404 as pending, never as paid', async () => {
 
   await withEnv({ PAYCHANGU_SECRET_KEY: KEY }, async () => {
     const result = await paychangu.verify('pch_' + 'e'.repeat(32), { http });
+    assert.equal(result.ok, true);
+    assert.equal(result.paid, false);
+    assert.equal(result.status, 'not_found');
+  });
+});
+
+test('verify treats a 400 "Payment link not found" as not_found (Direct MoMo)', async () => {
+  const http = {
+    get: async () => {
+      const error = new Error('bad request');
+      error.response = {
+        status: 400,
+        data: { status: 'failed', message: 'Payment link not found.' }
+      };
+      throw error;
+    }
+  };
+
+  await withEnv({ PAYCHANGU_SECRET_KEY: KEY }, async () => {
+    const result = await paychangu.verify('pch_' + 'f'.repeat(32), { http });
+    assert.equal(result.ok, true);
+    assert.equal(result.paid, false);
+    assert.equal(result.status, 'not_found');
+  });
+});
+
+test('verifyMobileMoney reads a Direct MoMo charge and normalizes MK to MWK', async () => {
+  const ref = 'pch_' + 'a1'.repeat(16);
+  const http = {
+    get: async (url, config) => {
+      assert.equal(url, `https://api.paychangu.com/mobile-money/payments/${ref}/verify`);
+      assert.equal(config.headers.Authorization, `Bearer ${KEY}`);
+      return {
+        status: 200,
+        data: {
+          status: 'success',
+          message: 'Transaction has already been validated as successful.',
+          data: {
+            charge_id: ref,
+            trans_id: 'trans-123',
+            status: 'success',
+            amount: '100.00',
+            currency: 'MK'
+          }
+        }
+      };
+    }
+  };
+
+  await withEnv({ PAYCHANGU_SECRET_KEY: KEY }, async () => {
+    const result = await paychangu.verifyMobileMoney(ref, { http });
+    assert.equal(result.ok, true);
+    assert.equal(result.paid, true);
+    assert.equal(result.status, 'success');
+    assert.equal(result.amountMinor, 10000);
+    assert.equal(result.currency, 'MWK');
+    assert.equal(result.reference, 'trans-123');
+  });
+});
+
+test('verifyMobileMoney treats a 404 charge as pending', async () => {
+  const http = {
+    get: async () => {
+      const error = new Error('not found');
+      error.response = { status: 404 };
+      throw error;
+    }
+  };
+
+  await withEnv({ PAYCHANGU_SECRET_KEY: KEY }, async () => {
+    const result = await paychangu.verifyMobileMoney('pch_' + 'b2'.repeat(16), { http });
     assert.equal(result.ok, true);
     assert.equal(result.paid, false);
     assert.equal(result.status, 'not_found');
