@@ -310,9 +310,9 @@ const Bet = ({ index, add, setAdd, canRemove, onRemove }: BetProps) => {
 									</label>
 								</span>
 							</button>
-							: <button className="btn-danger">WAITING</button> : betState ?
+							: <button className="btn-danger" disabled><label>BET PLACED</label></button> : betState ?
 							<>
-								<div className="btn-tooltip">Waiting for next round</div>
+								<div className="btn-tooltip">Queued for next round</div>
 								<button className="btn-danger h-[70%]" onClick={() => {
 									onBetClick(false);
 									update({ ...state, [`${index}autoCound`]: 0, userInfo: { ...state.userInfo, [index]: { ...state.userInfo[index], auto: false } } })

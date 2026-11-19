@@ -56,6 +56,13 @@ const REASON_LABEL: Record<string, string> = {
   ADMIN_DEBIT: "Balance adjustment (debit)",
 };
 
+const WITHDRAWAL_STATUS_LABEL: Record<string, string> = {
+  PENDING: "Processing",
+  PAID: "Paid",
+  REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
+};
+
 const fmt = (n: number) =>
   Number.isFinite(n)
     ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -180,13 +187,23 @@ export default function Wallet() {
     if (!depositSession || !isAuthenticated) return;
     if (depositSession.status !== "PENDING") return;
     const txRef = depositSession.txRef;
+    // Direct mobile-money charges only settle through the charge-verify
+    // endpoint; telling the server which mode we created lets it ask the right
+    // gateway endpoint first instead of always paying for a failed lookup.
+    const modeParam = depositSession.mode
+      ? `?mode=${encodeURIComponent(depositSession.mode)}`
+      : "";
     let cancelled = false;
     let timer: number | null = null;
+    let inFlight = false;
 
     const tick = async () => {
+      if (cancelled || inFlight) return;
+      inFlight = true;
+      let keepPolling = true;
       try {
         const res = await axios.get(
-          `${config.development_api}/payments/deposits/${txRef}/status`,
+          `${config.development_api}/payments/deposits/${txRef}/status${modeParam}`,
           { headers: { Authorization: `Bearer ${token()}` }, timeout: 10000 }
         );
         const status: DepositSession["status"] = res.data?.data?.status || "PENDING";
@@ -209,28 +226,52 @@ export default function Wallet() {
             setDepositSession(null);
             setPaymentStatus("loading");
           }, 1200);
+          keepPolling = false;
           return;
         }
         if (status === "FAILED" || status === "EXPIRED") {
           setPaymentStatus("failed");
           toast.error("The payment failed or was cancelled");
           void Promise.allSettled([loadAll(), refreshUser()]);
+          keepPolling = false;
           return;
         }
       } catch (error: any) {
         if (error?.response?.status === 401) {
           setDepositSession(null);
           setPaymentModalOpen(false);
+          keepPolling = false;
           return;
         }
         // keep polling on transient/network/gateway-pending errors
+      } finally {
+        inFlight = false;
+        if (!cancelled && keepPolling) timer = window.setTimeout(tick, 1000);
       }
-      if (!cancelled) timer = window.setTimeout(tick, 1500);
     };
-    // Poll quickly so balance updates as soon as gateway confirms.
-    timer = window.setTimeout(tick, depositCheckNonce ? 0 : 800);
+
+    // Poll immediately, then every second so the balance updates as soon as
+    // the network confirms. Also re-check the instant the player returns to
+    // the tab (e.g. after approving the prompt on their phone).
+    const kick = () => {
+      if (cancelled || inFlight) return;
+      if (timer) {
+        window.clearTimeout(timer);
+        timer = null;
+      }
+      void tick();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") kick();
+    };
+    window.addEventListener("focus", kick);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    timer = window.setTimeout(tick, depositCheckNonce ? 0 : 300);
     return () => {
       cancelled = true;
+      window.removeEventListener("focus", kick);
+      document.removeEventListener("visibilitychange", onVisibility);
       if (timer) window.clearTimeout(timer);
     };
   }, [depositSession, isAuthenticated, loadAll, refreshUser, depositCheckNonce]);
@@ -547,7 +588,7 @@ export default function Wallet() {
                       <div className="wd-list-row" key={w.id}>
                         <div><div className="wd-list-amount">{fmt(w.amount)} MWK</div><div className="wd-list-meta">{w.method} · {new Date(w.created_at).toLocaleString()}{w.rejection_reason ? ` · ${w.rejection_reason}` : ""}</div></div>
                         <div className="wd-list-actions">
-                          <span className={`wd-badge wd-badge--${w.status.toLowerCase()}`}>{w.status}</span>
+                          <span className={`wd-badge wd-badge--${w.status.toLowerCase()}`}>{WITHDRAWAL_STATUS_LABEL[w.status] || w.status}</span>
                           {w.status === "PENDING" && <button className="wd-link" onClick={() => cancelWithdrawal(w.id)}>Cancel</button>}
                         </div>
                       </div>

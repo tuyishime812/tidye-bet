@@ -747,6 +747,12 @@ export const Provider = ({ children }: any) => {
                    gameState.GameState
       };
       setGameState(mappedGameState);
+      if (mappedGameState.GameState === "BET") {
+        // Re-sync the panels from the server at the start of every round. This
+        // clears a stale "betted" flag left by a rejected/queued bet instead of
+        // showing WAITING for a bet that does not exist.
+        socket.emit("getMyBetState");
+      }
     });
 
     socket.on("previousHand", (previousHand: UserType[]) => {
@@ -861,15 +867,25 @@ export const Provider = ({ children }: any) => {
     });
 
     socket.on("error", (data) => {
-      // Functional update: the old object spread used a stale `userBetState`
-      // captured when the socket handler was registered, which could resurrect
-      // an older bet panel state.
       const index = data && data.index;
-      setUserBetState((prev) => ({
-        ...prev,
-        ...(index ? { [`${index}betted`]: false, [`${index}betState`]: false } : {}),
-      }));
-      if (/insufficient/i.test(String((data && data.message) || ""))) {
+      if (index) {
+        setUserBetState((prev) => ({
+          ...prev,
+          [`${index}betted`]: false,
+          [`${index}betState`]: false,
+        }));
+      } else {
+        // Errors without a panel (lost login, malformed bet) cannot be
+        // attributed to one panel. Drop every optimistic bet flag so the UI
+        // does not sit on WAITING for a bet the server never accepted.
+        setUserBetState({
+          fbetState: false, fbetted: false,
+          sbetState: false, sbetted: false,
+          tbetState: false, tbetted: false,
+          qbetState: false, qbetted: false,
+        });
+      }
+      if (/insufficient/i.test(String((data && data.message) || "")) || !index) {
         // The server rejected an optimistic debit. Re-read the authoritative
         // balance instead of leaving the UI short by the stake.
         refreshUser();

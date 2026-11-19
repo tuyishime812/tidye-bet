@@ -16,7 +16,7 @@ import copy from "copy-to-clipboard";
 
 import Context from "../../context";
 import axios from "axios";
-import config from "../../config.json";
+import { config } from "../../config";
 import ChatImg from "../../assets/images/chat.svg";
 import { displayName, generateRandomString } from "../utils";
 
@@ -117,10 +117,7 @@ const Menu = ({ setHowto }) => {
       if (authToken) {
         try {
           await axios.patch(
-            `${process.env.REACT_APP_DEVELOPMENT === "true"
-              ? config.development_api
-              : config.production_api
-            }/auth/me`,
+            `${config.development_api}/auth/me`,
             { isSoundEnable: checked },
             { headers: { Authorization: `Bearer ${authToken}` } }
           );
@@ -144,10 +141,7 @@ const Menu = ({ setHowto }) => {
       if (authToken) {
         try {
           await axios.patch(
-            `${process.env.REACT_APP_DEVELOPMENT === "true"
-              ? config.development_api
-              : config.production_api
-            }/auth/me`,
+            `${config.development_api}/auth/me`,
             { isMusicEnable: checked },
             { headers: { Authorization: `Bearer ${authToken}` } }
           );
@@ -184,10 +178,7 @@ const Menu = ({ setHowto }) => {
     const authToken = localStorage.getItem("authToken");
     if (!authToken) return;
     const response: any = await axios.patch(
-      `${process.env.REACT_APP_DEVELOPMENT === "true"
-        ? config.development_api
-        : config.production_api
-      }/auth/me`,
+      `${config.development_api}/auth/me`,
       { avatar },
       { headers: { Authorization: `Bearer ${authToken}` } }
     );

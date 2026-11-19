@@ -1,6 +1,13 @@
 const webpack = require('webpack');
 
 module.exports = function override(config, env) {
+    // Disable source maps for production builds. This replaces the old
+    // Windows-only `set "GENERATE_SOURCEMAP=false" && ...` build command,
+    // which was a no-op on the Linux builder used by Vercel/Render.
+    if (env === 'production') {
+        config.devtool = false;
+    }
+
     // Add fallback for node modules
     config.resolve.fallback = {
         ...config.resolve.fallback,

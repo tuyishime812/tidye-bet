@@ -793,6 +793,12 @@ io.on('connection', (socket) => {
     socket.emit('history', game.history);
   });
 
+  // Re-sync a player's panel flags on demand (round start / reconnect). This
+  // clears stale optimistic "betted" state from a rejected or queued bet.
+  socket.on('getMyBetState', () => {
+    game.emitPanelState(socket.id);
+  });
+
   /**
    * Place a bet.
    *

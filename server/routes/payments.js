@@ -594,12 +594,25 @@ router.get('/deposits/:txRef/status', requireAuth, apiRateLimit, async (req, res
       });
     }
 
-    let verification = await paychangu.verify(txRef);
     // Direct Mobile Money charges are invisible to /verify-payment (PayChangu
-    // answers "Payment link not found"), so fall back to charge verification.
-    if (verification.ok && verification.status === 'not_found') {
-      const charge = await paychangu.verifyMobileMoney(txRef);
-      if (charge.ok) verification = charge;
+    // answers "Payment link not found"), so which endpoint we ask first matters
+    // for latency: each call is a round-trip to the gateway and the client
+    // polls until the deposit settles. The browser knows the mode it created,
+    // so ask the matching endpoint first and only fall back to the other one.
+    const mode = String(req.query.mode || '').toLowerCase();
+    let verification;
+    if (mode === 'mobile_money') {
+      verification = await paychangu.verifyMobileMoney(txRef);
+      if (verification.ok && verification.status === 'not_found') {
+        const checkout = await paychangu.verify(txRef);
+        if (checkout.ok) verification = checkout;
+      }
+    } else {
+      verification = await paychangu.verify(txRef);
+      if (verification.ok && verification.status === 'not_found') {
+        const charge = await paychangu.verifyMobileMoney(txRef);
+        if (charge.ok) verification = charge;
+      }
     }
     if (!verification.ok) {
       // Gateway unreachable: keep the deposit pending so a later poll can

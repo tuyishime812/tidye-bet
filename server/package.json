@@ -6,10 +6,10 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "node --test --test-concurrency=1 test/*.test.js",
-    "test:money": "node test/money.test.js",
-    "test:auth": "node test/auth.test.js",
-    "test:boot": "node test/boot.test.js",
+    "test": "node --require ./test/setup.js --test --test-concurrency=1 test/*.test.js",
+    "test:money": "node --require ./test/setup.js test/money.test.js",
+    "test:auth": "node --require ./test/setup.js test/auth.test.js",
+    "test:boot": "node --require ./test/setup.js test/boot.test.js",
     "db:apply": "node scripts/apply-schema.js",
     "admin:create": "node scripts/create-admin.js",
     "reconcile": "node scripts/reconcile.js"
