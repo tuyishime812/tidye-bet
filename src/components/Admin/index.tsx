@@ -462,8 +462,8 @@ export default function Admin() {
         <div className="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
         <div className="admin-login-card glass">
           <div className="brand" style={{ paddingBottom: 10 }}>
-            <div className="logo">YB</div>
-            <div><b>Yanga Bet</b><span>Operator console</span></div>
+            <div className="logo">TB</div>
+            <div><b>Tidye Bet</b><span>Operator console</span></div>
           </div>
           <div className="admin-login-title">Sign in</div>
           <div className="admin-login-sub">Restricted back-office access</div>
@@ -486,7 +486,7 @@ export default function Admin() {
       <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true" />
       <div className="app">
         <aside className={`side glass ${menuOpen ? "open" : ""}`}>
-          <div className="brand"><div className="logo">YB</div><div><b>Yanga Bet</b><span>Operator console</span></div></div>
+          <div className="brand"><div className="logo">TB</div><div><b>Tidye Bet</b><span>Operator console</span></div></div>
           <nav id="nav">
             {navItems.map((n) => (
               <button key={n.key} className={`nav-item ${section === n.key ? "on" : ""}`} onClick={() => go(n.key)} type="button">

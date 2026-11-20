@@ -1,7 +1,7 @@
 {
-  "name": "yanga-bet-server",
+  "name": "tidye-bet-server",
   "version": "1.0.0",
-  "description": "Backend server for Yanga Bet",
+  "description": "Backend server for Tidye Bet",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

@@ -1,6 +1,6 @@
-# Yanga Bet ✈️
+# Tidye Bet ✈️
 
-**Yanga Bet** is an Aviator crash game where players test their timing to cash out before the plane flies away. It includes real-time gameplay, account/wallet flows, and an operator admin console.
+**Tidye Bet** is an Aviator crash game where players test their timing to cash out before the plane flies away. It includes real-time gameplay, account/wallet flows, and an operator admin console.
 
 
 

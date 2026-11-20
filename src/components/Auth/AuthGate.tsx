@@ -241,7 +241,7 @@ export default function AuthGate() {
               </svg>
             </span>
             <span className="auth-gate__logo-text">
-              Yanga <strong>Bet</strong>
+              Tidye <strong>Bet</strong>
             </span>
           </div>
 
@@ -287,7 +287,7 @@ export default function AuthGate() {
               {authReason ||
                 (isRegister
                   ? "Join in under a minute - all you need is a phone number."
-                  : "Log in to your Yanga Bet account.")}
+                  : "Log in to your Tidye Bet account.")}
             </p>
 
             <div className="auth-gate__seg" role="tablist" aria-label="Log in or register">
@@ -428,7 +428,7 @@ export default function AuthGate() {
                 </>
               ) : (
                 <>
-                  New to Yanga Bet?{" "}
+                  New to Tidye Bet?{" "}
                   <button type="button" onClick={() => switchMode("register")}>
                     Create an account
                   </button>

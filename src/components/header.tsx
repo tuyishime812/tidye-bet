@@ -219,8 +219,8 @@ export default function Header() {
         <div className="nav-inner">
           <div className="nav-topbar">
             <div className="nav-left">
-              <NavLink to="/" className="brand" aria-label="Yanga Bet home" onClick={closeDrawer}>
-                <span className="brand__text">Yanga Bet</span>
+              <NavLink to="/" className="brand" aria-label="Tidye Bet home" onClick={closeDrawer}>
+                <span className="brand__text">Tidye Bet</span>
               </NavLink>
 
               <nav className="nav-links" aria-label="Primary">
