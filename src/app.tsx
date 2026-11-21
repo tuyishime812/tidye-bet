@@ -107,6 +107,7 @@ function App() {
   const location = useLocation();
   const isAviator = location.pathname === "/aviator";
   const isAdmin = location.pathname === "/admin";
+  const isHome = location.pathname === "/";
   const showAviator = isAviator && isAuthenticated && authReady;
 
   // The Unity WebGL runtime must never be unmounted while its browser main loop
@@ -176,7 +177,7 @@ function App() {
         </div>
       )}
 
-      {!isAdmin && <Header />}
+      {!isAdmin && !isHome && <Header />}
 
       <Routes>
         {/* Game lobby - Aviator entry. */}

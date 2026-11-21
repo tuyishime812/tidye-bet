@@ -1,223 +1,342 @@
-.aviator-lobby {
-  min-height: calc(100vh - 38px);
-  display: flex;
-  flex-direction: column;
-  background:
-    radial-gradient(1200px 600px at 20% 0%, rgba(255, 106, 77, 0.22), transparent 60%),
-    radial-gradient(900px 500px at 90% 20%, rgba(124, 108, 255, 0.18), transparent 55%),
-    linear-gradient(180deg, #15173d 0%, #0c1014 100%);
-  color: #f1f4ea;
-}
-
-.aviator-lobby,
-.aviator-lobby * {
-  font-family: Barlow, system-ui, sans-serif;
-}
-
-.aviator-lobby__hero {
-  flex: 1;
-  display: grid;
-  place-items: center;
-  padding: 32px 16px;
-  position: relative;
-  overflow: hidden;
-}
-
-.aviator-lobby__bg {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-  background-size: 48px 48px;
-  opacity: 0.25;
-  pointer-events: none;
-}
-
-.aviator-lobby__card {
-  position: relative;
-  z-index: 1;
-  width: min(720px, 100%);
-  padding: clamp(28px, 5vw, 56px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 28px;
-  background: rgba(12, 16, 20, 0.55);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
-  text-align: center;
-}
-
-.aviator-lobby__eyebrow {
-  margin: 0 0 8px;
-  color: #ffb627;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-size: 13px;
-}
-
-.aviator-lobby__title {
+.tidye-home {
+  --bg: #eef2fa;
+  --panel: #fff;
+  --panel2: #e6ebf6;
+  --line: #d3dbec;
+  --text: #0b1f4d;
+  --muted: #51628a;
+  --gold: #ffc21a;
+  --goldtext: #3a2a00;
+  --win: #12a15a;
+  --lose: #e5383b;
+  --nav: #0b1f4d;
+  --navtext: #fff;
+  color-scheme: light;
+  box-sizing: border-box;
   margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 16px/1.55 Barlow, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+  min-height: 100vh;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tidye-home {
+    --bg: #07142f;
+    --panel: #0e2250;
+    --panel2: #13306a;
+    --line: #1f3d7a;
+    --text: #f2f5ff;
+    --muted: #9db0da;
+    --win: #2fd27a;
+    --lose: #ff5a5c;
+    --nav: #050f24;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="light"] .tidye-home {
+  --bg: #eef2fa;
+  --panel: #fff;
+  --panel2: #e6ebf6;
+  --line: #d3dbec;
+  --text: #0b1f4d;
+  --muted: #51628a;
+  --win: #12a15a;
+  --lose: #e5383b;
+  --nav: #0b1f4d;
+  --navtext: #fff;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] .tidye-home {
+  --bg: #07142f;
+  --panel: #0e2250;
+  --panel2: #13306a;
+  --line: #1f3d7a;
+  --text: #f2f5ff;
+  --muted: #9db0da;
+  --win: #2fd27a;
+  --lose: #ff5a5c;
+  --nav: #050f24;
+  color-scheme: dark;
+}
+
+.tidye-home *, .tidye-home *::before, .tidye-home *::after {
+  box-sizing: border-box;
+}
+
+.tidye-home a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.tidye-home :focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.th-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.th-h1, .th-h2, .th-h3 {
   font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
-  font-size: clamp(64px, 12vw, 120px);
-  line-height: 0.9;
-  letter-spacing: 0.02em;
+  letter-spacing: .01em;
+}
+
+.th-header {
+  background: var(--nav);
+  color: var(--navtext);
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+}
+
+.th-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: 60px;
+}
+
+.th-logo {
+  font: 800 26px/1 "Barlow Condensed", sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--navtext);
+}
+
+.th-logo svg {
+  width: 26px;
+  height: 26px;
+}
+
+.th-logo em {
+  font-style: normal;
+  color: var(--gold);
+}
+
+.th-links {
+  display: flex;
+  gap: 22px;
+  font-weight: 500;
+  font-size: 15px;
+  opacity: .85;
+  margin-right: auto;
+}
+
+.th-links a:hover {
+  opacity: 1;
+}
+
+.th-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 15px;
+  font-family: inherit;
+  border: 1.5px solid currentColor;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.th-btn.th-gold {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--goldtext);
+}
+
+.th-btn.th-gold:hover {
+  filter: brightness(1.06);
+}
+
+.th-btn.th-lg {
+  height: 48px;
+  padding: 0 26px;
+  font-size: 17px;
+}
+
+.th-btn.th-ghost:hover {
+  background: rgba(255, 255, 255, .08);
+}
+
+.th-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 40px;
+  align-items: center;
+  padding: 44px 0 36px;
+}
+
+.th-h1 {
+  font-size: clamp(44px, 6vw, 76px);
+  line-height: .95;
+  margin: 0 0 16px;
+  font-weight: 800;
   text-transform: uppercase;
+  color: var(--text);
 }
 
-.aviator-lobby__subtitle {
-  margin: 14px auto 0;
-  max-width: 44ch;
-  color: #d7ddd5;
+.th-lead {
   font-size: 18px;
-  line-height: 1.5;
+  color: var(--muted);
+  margin: 0 0 26px;
+  max-width: 420px;
 }
 
-.aviator-lobby__preview {
-  margin: 28px auto 20px;
-  padding: 14px 16px 18px;
-  border-radius: 20px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
-  border: 1px solid rgba(255,255,255,0.1);
-  width: min(420px, 100%);
+.th-cta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.aviator-lobby__sky {
-  position: relative;
-  height: 150px;
-  margin-bottom: 12px;
-  border-radius: 16px;
+.th-stage {
+  background: #06122b;
+  color: #fff;
+  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    radial-gradient(120% 140% at 15% 100%, rgba(255, 182, 39, 0.12), transparent 60%),
-    linear-gradient(180deg, rgba(18, 24, 64, 0.9), rgba(10, 13, 24, 0.88));
+  position: relative;
+  border: 1px solid #1f3d7a;
 }
 
-.aviator-lobby__trail {
+.th-sky {
+  position: relative;
+  height: 340px;
+  overflow: hidden;
+}
+
+.th-rays {
+  position: absolute;
+  left: -50%;
+  top: -80%;
+  width: 200%;
+  height: 360%;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, #0c2250 0 7.5deg, #081a40 7.5deg 15deg);
+  opacity: .9;
+  animation: th-spin 90s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes th-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .th-rays { animation: none; }
+}
+
+.th-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
-.aviator-lobby__cloud {
+.th-mult {
   position: absolute;
-  width: 84px;
-  height: 26px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
-  filter: blur(1px);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 800 84px/1 "Barlow Condensed", sans-serif;
+  z-index: 2;
+  pointer-events: none;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, .5);
+  color: #fff;
 }
 
-.aviator-lobby__cloud--a { top: 24%; left: 10%; }
-.aviator-lobby__cloud--b { top: 54%; right: 8%; width: 112px; height: 32px; opacity: 0.7; }
+.th-mult small {
+  display: block;
+  text-align: center;
+  font: 600 15px Barlow, sans-serif;
+  color: #9db0da;
+  margin-top: 6px;
+  text-shadow: none;
+}
 
-.aviator-lobby__plane {
-  position: absolute;
-  z-index: 1;
-  width: 44px;
-  height: 44px;
+.th-mult.crash {
+  color: #ff5a5c;
+}
+
+.th-section {
+  padding: 36px 0;
+}
+
+.th-h2 {
+  font-size: 34px;
+  line-height: 1.05;
+  margin: 0 0 18px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.th-join {
+  background: var(--nav);
+  color: #fff;
+  border-radius: 12px;
+  padding: 36px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #ffb627;
-  transform: translate(-50%, 50%);
-  transition: left 0.12s linear, bottom 0.12s linear;
-  filter: drop-shadow(0 4px 10px rgba(255, 106, 77, 0.35));
-}
-
-.aviator-lobby__plane-inner {
-  display: flex;
-  transition: transform 0.12s linear;
-}
-
-.aviator-lobby__plane--crash {
-  color: #ff6a4d;
-  animation: aviatorPlaneAway 0.8s ease-out forwards;
-}
-
-@keyframes aviatorPlaneAway {
-  0% { opacity: 1; transform: translate(-50%, 50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, 50%) translate(30px, -24px) scale(1.18); }
-}
-
-.aviator-lobby__mult {
-  font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
-  font-size: clamp(42px, 8vw, 64px);
-  font-weight: 800;
-  line-height: 1;
-  color: #ffffff;
-}
-
-.aviator-lobby__mult--crash {
-  color: #ff6a4d;
-}
-
-.aviator-lobby__hint {
-  margin-top: 6px;
-  color: #aab4ad;
-  font-size: 14px;
-}
-
-.aviator-lobby__chips {
-  display: flex;
+  justify-content: space-between;
+  gap: 20px;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin: 18px 0 28px;
 }
 
-.aviator-lobby__chips span {
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.08);
+.th-join .th-h2 {
+  margin: 0;
+  color: #fff;
+}
+
+.th-join p {
+  margin: 4px 0 0;
+  color: #9db0da;
+}
+
+.th-footer {
+  background: var(--nav);
+  color: #9db0da;
   font-size: 14px;
-  font-weight: 500;
+  padding: 26px 0;
+  margin-top: 20px;
 }
 
-.aviator-lobby__cta {
-  appearance: none;
-  border: 0;
-  border-radius: 999px;
-  padding: 16px 34px;
-  font-size: 17px;
+.th-footer-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.th-age {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #9db0da;
+  border-radius: 50%;
   font-weight: 700;
   color: #fff;
-  background: #ff6a4d;
-  cursor: pointer;
-  transition: transform 0.15s ease, filter 0.15s ease;
-}
-
-.aviator-lobby__cta:hover,
-.aviator-lobby__cta:focus-visible {
-  transform: translateY(-1px);
-  filter: brightness(1.05);
-  outline: none;
-}
-
-.aviator-lobby__foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 10px 28px;
-  padding: 14px 16px;
-  background: #080a0c;
-  color: #aab4ad;
+  margin-right: 10px;
   font-size: 13px;
+  vertical-align: middle;
 }
 
-@media (max-width: 640px) {
-  .aviator-lobby__subtitle {
-    font-size: 16px;
-  }
-  .aviator-lobby__sky {
-    height: 120px;
-  }
-  .aviator-lobby__foot {
-    font-size: 12px;
-    gap: 8px 16px;
-  }
+@media (max-width: 900px) {
+  .th-links { display: none; }
+  .th-hero { grid-template-columns: 1fr; padding-top: 28px; }
+  .th-sky { height: 280px; }
+  .th-mult { font-size: 64px; }
+  .th-nav .th-btn.th-ghost { margin-left: auto; }
+  .th-join { padding: 26px 20px; }
 }

@@ -1,14 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Plane } from "lucide-react";
 import Context from "../../context";
 import "./gameSelection.scss";
 
 /**
- * Aviator-only lobby.
- *
- * Guests are prompted to authenticate when they choose to enter the game.
- * Enforcement remains server-side (CWE-306).
+ * Home / landing page.
+ * Design provided by product: hero + Aviator preview + responsible play CTA.
+ * Auth is enforced when entering Aviator (server-side).
  */
 export default function GameSelection() {
   const navigate = useNavigate();
@@ -16,8 +14,10 @@ export default function GameSelection() {
     React.useContext(Context) as any;
 
   const [pendingRoute, setPendingRoute] = React.useState<string | null>(null);
-  const [multiplier, setMultiplier] = React.useState(1);
-  const [crashed, setCrashed] = React.useState(false);
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const mvRef = React.useRef<HTMLSpanElement | null>(null);
+  const stRef = React.useRef<HTMLSpanElement | null>(null);
+  const multRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
     if (isAuthenticated && pendingRoute) {
@@ -32,49 +32,7 @@ export default function GameSelection() {
     }
   }, [authModalOpen, isAuthenticated]);
 
-  React.useEffect(() => {
-    let intervalId = 0;
-    let timeoutId = 0;
-    let cancelled = false;
-
-    const runRound = () => {
-      if (cancelled) return;
-      let value = 1;
-      const target = 2 + Math.random() * 7;
-      setCrashed(false);
-      setMultiplier(1);
-      intervalId = window.setInterval(() => {
-        value *= 1.014;
-        if (value >= target) {
-          window.clearInterval(intervalId);
-          setMultiplier(Number(value.toFixed(2)));
-          setCrashed(true);
-          timeoutId = window.setTimeout(runRound, 1200);
-        } else {
-          setMultiplier(Number(value.toFixed(2)));
-        }
-      }, 55);
-    };
-
-    runRound();
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-      window.clearTimeout(timeoutId);
-    };
-  }, []);
-
-  // Follow a quadratic flight path from the bottom-left to the top-right so
-  // the plane visibly climbs with the multiplier.
-  const progress = Math.min(1, Math.max(0, (multiplier - 1) / 7));
-  const inv = 1 - progress;
-  const planeX = inv * inv * 8 + 2 * inv * progress * 45 + progress * progress * 86;
-  const planeY = inv * inv * 82 + 2 * inv * progress * 78 + progress * progress * 16;
-  const tangentX = 2 * inv * (45 - 8) + 2 * progress * (86 - 45);
-  const tangentY = 2 * inv * (78 - 82) + 2 * progress * (16 - 78);
-  const planeAngle = (Math.atan2(tangentY, tangentX) * 180) / Math.PI;
-
-  const handleEnterAviator = () => {
+  const enterAviator = () => {
     if (isAuthenticated) {
       navigate("/aviator");
       return;
@@ -83,71 +41,247 @@ export default function GameSelection() {
     openAuthModal("Log in or create an account to play Aviator.");
   };
 
+  const openLogin = () => openAuthModal("Log in to your account.", "login");
+  const openRegister = () =>
+    openAuthModal("Create an account to start playing.", "register");
+
+  React.useEffect(() => {
+    const cv = canvasRef.current;
+    const mv = mvRef.current;
+    const st = stRef.current;
+    const mb = multRef.current;
+    if (!cv || !mv || !st || !mb) return;
+
+    const ctx = cv.getContext("2d");
+    if (!ctx) return;
+    const c = ctx;
+
+    let W = 0;
+    let H = 0;
+    let dpr = 1;
+    let raf = 0;
+    let t = 0;
+    let crash = 0;
+    let wait = 0;
+    let last = performance.now();
+    let stopped = false;
+
+    const size = () => {
+      dpr = window.devicePixelRatio || 1;
+      W = cv.clientWidth;
+      H = cv.clientHeight;
+      cv.width = Math.max(1, Math.floor(W * dpr));
+      cv.height = Math.max(1, Math.floor(H * dpr));
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    const V = (tt: number) => Math.exp(0.26 * tt);
+
+    const newRound = () => {
+      t = 0;
+      crash = 1.4 + Math.random() * Math.random() * 14;
+      mb.classList.remove("crash");
+      st.textContent = "Round in progress";
+    };
+
+    const draw = (maxT: number, vmax: number, tt: number) => {
+      c.clearRect(0, 0, W, H);
+      const px = 40;
+      const py = 34;
+      const iw = W - px - 30;
+      const ih = H - py - 40;
+      c.strokeStyle = "rgba(255,255,255,.07)";
+      c.lineWidth = 1;
+      c.fillStyle = "rgba(157,176,218,.7)";
+      c.font = "12px Barlow,sans-serif";
+      for (let i = 0; i <= 4; i++) {
+        const y = H - py - (ih * i) / 4;
+        c.beginPath();
+        c.moveTo(px, y);
+        c.lineTo(W - 14, y);
+        c.stroke();
+        c.fillText((1 + ((vmax - 1) * i) / 4).toFixed(1) + "x", 6, y + 4);
+      }
+      const pts: Array<[number, number]> = [];
+      const step = tt / 60 || 1;
+      for (let s = 0; s <= tt; s += step) {
+        const x = px + (s / maxT) * iw;
+        const y2 = H - py - ((V(s) - 1) / (vmax - 1)) * ih;
+        pts.push([x, y2]);
+      }
+      const e = pts[pts.length - 1] || [px, H - py];
+      c.beginPath();
+      c.moveTo(px, H - py);
+      pts.forEach((p) => c.lineTo(p[0], p[1]));
+      c.lineTo(e[0], H - py);
+      c.closePath();
+      c.fillStyle = "rgba(229,56,59,.22)";
+      c.fill();
+      c.beginPath();
+      pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])));
+      c.strokeStyle = "#e5383b";
+      c.lineWidth = 4;
+      c.lineJoin = "round";
+      c.stroke();
+      return e;
+    };
+
+    const plane = (x: number, y: number, a: number) => {
+      c.save();
+      c.translate(x, y);
+      c.rotate(a);
+      c.fillStyle = "#e5383b";
+      c.beginPath();
+      c.moveTo(-26, -6);
+      c.quadraticCurveTo(-4, -14, 24, -2);
+      c.lineTo(26, 2);
+      c.quadraticCurveTo(0, 10, -26, 6);
+      c.closePath();
+      c.fill();
+      c.fillStyle = "#b82629";
+      c.beginPath();
+      c.moveTo(-6, 2);
+      c.lineTo(-16, 16);
+      c.lineTo(2, 12);
+      c.closePath();
+      c.fill();
+      c.beginPath();
+      c.moveTo(-24, -4);
+      c.lineTo(-30, -16);
+      c.lineTo(-18, -6);
+      c.closePath();
+      c.fill();
+      c.fillStyle = "#fff";
+      c.fillRect(6, -6, 10, 3);
+      c.restore();
+    };
+
+    const frame = (now: number) => {
+      if (stopped) return;
+      const dt = (now - last) / 1000;
+      last = now;
+      if (wait > 0) {
+        wait -= dt;
+        if (wait <= 0) newRound();
+        raf = requestAnimationFrame(frame);
+        return;
+      }
+      t += dt;
+      let v = V(t);
+      if (v >= crash) {
+        v = crash;
+        mv.textContent = v.toFixed(2) + "x";
+        mb.classList.add("crash");
+        st.textContent = "Flew away";
+        wait = 2.6;
+        raf = requestAnimationFrame(frame);
+        return;
+      }
+      const maxT = Math.max(t, 6);
+      const vmax = Math.max(v, 3);
+      const e = draw(maxT, vmax, t);
+      plane(e[0], e[1], -0.35);
+      mv.textContent = v.toFixed(2) + "x";
+      raf = requestAnimationFrame(frame);
+    };
+
+    size();
+    window.addEventListener("resize", size);
+    newRound();
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+    if (reduceMotion) {
+      draw(6, 3, 5);
+      mv.textContent = "3.21x";
+    } else {
+      raf = requestAnimationFrame(frame);
+    }
+
+    return () => {
+      stopped = true;
+      window.removeEventListener("resize", size);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
   return (
-    <div className="aviator-lobby">
-      <main className="aviator-lobby__hero">
-        <div className="aviator-lobby__bg" aria-hidden="true" />
-        <section className="aviator-lobby__card" aria-label="Aviator game">
-          <p className="aviator-lobby__eyebrow">Crash game</p>
-          <h1 className="aviator-lobby__title">Aviator</h1>
-          <p className="aviator-lobby__subtitle">
-            Watch the multiplier climb, then cash out before it flies away.
-          </p>
-
-          <div className="aviator-lobby__preview" aria-hidden="true">
-            <div className="aviator-lobby__sky">
-              <svg className="aviator-lobby__trail" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="aviatorTrailGradient" x1="0" y1="1" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#ffb627" stopOpacity="0.15" />
-                    <stop offset="100%" stopColor="#ff6a4d" stopOpacity="0.9" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M8 82 Q45 78 86 16"
-                  fill="none"
-                  stroke="url(#aviatorTrailGradient)"
-                  strokeWidth="2"
-                  strokeDasharray="1"
-                  strokeDashoffset={1 - progress}
-                  strokeLinecap="round"
-                  pathLength={1}
-                  vectorEffect="non-scaling-stroke"
-                />
+    <div className="tidye-home">
+      <header className="th-header">
+        <div className="th-wrap">
+          <nav className="th-nav" aria-label="Main navigation">
+            <a className="th-logo" href="/" aria-label="Tidye Bet home">
+              <svg viewBox="0 0 24 24" fill="#ffc21a" aria-hidden="true">
+                <path d="M2 14l20-9-7 16-3.5-6.5z" />
               </svg>
-              <span className="aviator-lobby__cloud aviator-lobby__cloud--a" />
-              <span className="aviator-lobby__cloud aviator-lobby__cloud--b" />
-              <span
-                className={crashed ? "aviator-lobby__plane aviator-lobby__plane--crash" : "aviator-lobby__plane"}
-                style={{ left: `${planeX}%`, bottom: `${100 - planeY}%` }}
-              >
-                <span className="aviator-lobby__plane-inner" style={{ transform: `rotate(${planeAngle}deg)` }}>
-                  <Plane size={30} strokeWidth={1.8} />
-                </span>
-              </span>
+              Tidye<em>Bet</em>
+            </a>
+            <div className="th-links">
+              <a href="#safe">Responsible play</a>
             </div>
-            <div className={crashed ? "aviator-lobby__mult aviator-lobby__mult--crash" : "aviator-lobby__mult"}>
-              {crashed ? `Flew away ${multiplier.toFixed(2)}x` : `${multiplier.toFixed(2)}x`}
+            <button type="button" className="th-btn th-ghost" onClick={openLogin}>
+              Log in
+            </button>
+            <button type="button" className="th-btn th-gold" onClick={openRegister}>
+              Register
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <main className="th-wrap">
+        <div className="th-hero">
+          <div>
+            <h1 className="th-h1">
+              Aviator.
+              <br />
+              Cash out in time.
+            </h1>
+            <p className="th-lead">
+              Place your bet before take-off. The multiplier climbs until the
+              plane flies away, so cash out first.
+            </p>
+            <div className="th-cta">
+              <button type="button" className="th-btn th-gold th-lg" onClick={enterAviator}>
+                Play now
+              </button>
             </div>
-            <div className="aviator-lobby__hint">Live preview</div>
           </div>
 
-          <div className="aviator-lobby__chips">
-            <span>Real-time multiplier</span>
-            <span>Instant cash out</span>
-            <span>Provably fair</span>
+          <div className="th-stage" aria-label="Aviator game preview">
+            <div className="th-sky">
+              <div className="th-rays" />
+              <canvas ref={canvasRef} className="th-canvas" />
+              <div className="th-mult" ref={multRef}>
+                <div>
+                  <span ref={mvRef}>1.00x</span>
+                  <small ref={stRef}>Round in progress</small>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <button type="button" className="aviator-lobby__cta" onClick={handleEnterAviator}>
-            Enter Aviator
-          </button>
+        <section id="safe" className="th-section">
+          <div className="th-join">
+            <div>
+              <h2 className="th-h2">Ready for the next round?</h2>
+              <p>Register in a minute and take a seat.</p>
+            </div>
+            <button type="button" className="th-btn th-gold th-lg" onClick={openRegister}>
+              Register
+            </button>
+          </div>
         </section>
       </main>
 
-      <footer className="aviator-lobby__foot">
-        <span>Secure and encrypted</span>
-        <span>24/7 support</span>
-        <span>18+ only. Play responsibly</span>
+      <footer className="th-footer">
+        <div className="th-wrap th-footer-row">
+          <div>
+            <span className="th-age">18+</span>Gambling can be addictive. Only bet
+            what you can afford to lose.
+          </div>
+          <div>© 2026 Tidye Bet</div>
+        </div>
       </footer>
     </div>
   );
