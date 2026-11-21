@@ -807,35 +807,40 @@ export const Provider = ({ children }: any) => {
         const panel = (attrs.userInfo as any)[panelKey];
         const panelData = userData?.[panelKey];
         if (!panel) return;
-        if (!panelData?.betted) {
-          (betStatus as any)[`${panelKey}betted`] = false;
-          if (panel.auto) {
-            if (panelData?.cashouted) {
-              increaseVar.value += panelData.cashAmount || 0;
-              if ((attrs as any)[`${panelKey}inState`] && (attrs as any)[`${panelKey}increase`] - increaseVar.value <= 0) {
-                panel.auto = false;
-                (betStatus as any)[`${panelKey}betState`] = false;
-                increaseVar.value = 0;
-              } else if (
-                (attrs as any)[`${panelKey}single`] &&
-                (attrs as any)[`${panelKey}singleAmount`] <= (panelData.cashAmount || 0)
-              ) {
-                panel.auto = false;
-                (betStatus as any)[`${panelKey}betState`] = false;
-              } else {
-                panel.auto = true;
-                (betStatus as any)[`${panelKey}betState`] = true;
-              }
+
+        const participated = !!panelData?.betted;
+        // A finished round must never leave a panel "betted" for the next round.
+        (betStatus as any)[`${panelKey}betted`] = false;
+
+        // Only apply auto stop/progress accounting for panels that actually had
+        // a bet in this round. Fabricating a loss for a non-participated panel
+        // would incorrectly drain auto-stop counters.
+        if (participated && panel.auto) {
+          if (panelData?.cashouted) {
+            increaseVar.value += panelData.cashAmount || 0;
+            if ((attrs as any)[`${panelKey}inState`] && (attrs as any)[`${panelKey}increase`] - increaseVar.value <= 0) {
+              panel.auto = false;
+              (betStatus as any)[`${panelKey}betState`] = false;
+              increaseVar.value = 0;
+            } else if (
+              (attrs as any)[`${panelKey}single`] &&
+              (attrs as any)[`${panelKey}singleAmount`] <= (panelData.cashAmount || 0)
+            ) {
+              panel.auto = false;
+              (betStatus as any)[`${panelKey}betState`] = false;
             } else {
-              decreaseVar.value += panel.betAmount || 0;
-              if ((attrs as any)[`${panelKey}deState`] && (attrs as any)[`${panelKey}decrease`] - decreaseVar.value <= 0) {
-                panel.auto = false;
-                (betStatus as any)[`${panelKey}betState`] = false;
-                decreaseVar.value = 0;
-              } else {
-                panel.auto = true;
-                (betStatus as any)[`${panelKey}betState`] = true;
-              }
+              panel.auto = true;
+              (betStatus as any)[`${panelKey}betState`] = true;
+            }
+          } else {
+            decreaseVar.value += panel.betAmount || 0;
+            if ((attrs as any)[`${panelKey}deState`] && (attrs as any)[`${panelKey}decrease`] - decreaseVar.value <= 0) {
+              panel.auto = false;
+              (betStatus as any)[`${panelKey}betState`] = false;
+              decreaseVar.value = 0;
+            } else {
+              panel.auto = true;
+              (betStatus as any)[`${panelKey}betState`] = true;
             }
           }
         }

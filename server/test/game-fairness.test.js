@@ -42,7 +42,7 @@ test('deriveCrashPoint is deterministic and stable (known vectors)', () => {
   // be told their (correct) result is wrong. Pin the vectors (clamped to the
   // global fair cap CRASH_CEILING).
   assert.equal(deriveCrashPoint('abc', ['x']), 5.98);
-  assert.equal(deriveCrashPoint('abc', []), 6.00);
+  assert.equal(deriveCrashPoint('abc', []), 6.35);
   assert.equal(deriveCrashPoint('deadbeef', []), 1.07);
   assert.equal(deriveCrashPoint('abc', ['x']), deriveCrashPoint('abc', ['x']));
 });

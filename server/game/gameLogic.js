@@ -17,7 +17,7 @@ const BET_PANELS = ['f', 's', 't', 'q'];
 const isBetPanel = (type) => typeof type === 'string' && BET_PANELS.includes(type);
 
 /** Hard ceiling on a single round's multiplier (fair global cap). */
-const CRASH_CEILING = 6;
+const CRASH_CEILING = 6.35;
 
 /**
  * Width of the integer sampled from the seed hash.
@@ -759,12 +759,35 @@ class Game {
       return;
     }
 
-    const bet = this.bettedUsers.find(b => b.socketId === socket.id && b.type === type);
-    if (!bet || bet.cashouted) {
+    // Primary lookup by socket; fallback by authenticated userId so a reconnect
+    // / socket-id change doesn't strand an active bet.
+    let bet = this.bettedUsers.find(b => b.socketId === socket.id && b.type === type);
+    if (!bet && socket.userId) {
+      bet = this.bettedUsers.find(
+        b => b.userId === socket.userId && b.type === type && !b.cashouted
+      );
+      if (bet) {
+        bet.socketId = socket.id;
+        bet.disconnected = false;
+      }
+    }
+
+    if (!bet) {
+      this.emitPanelState(socket.id);
       socket.emit('error', {
         message: 'No active bet to cash out',
         index: type
       });
+      return;
+    }
+
+    if (bet.cashouted) {
+      // Already settled (e.g. server auto-cashout won the race). Sync client
+      // state instead of surfacing a confusing error.
+      this.emitPanelState(socket.id);
+      if (bet.cashOut > 0) {
+        socket.emit('success', `Already cashed out at ${Number(bet.cashOut).toFixed(2)}x`);
+      }
       return;
     }
 
@@ -788,6 +811,15 @@ class Game {
 
     const result = await this.settleBet(bet, cashOutAt, { source: 'manual' });
     if (!result.ok) {
+      // If another path settled it first, sync state gracefully.
+      if (result.reason === 'already_settled') {
+        this.emitPanelState(socket.id);
+        if (bet.cashOut > 0) {
+          socket.emit('success', `Already cashed out at ${Number(bet.cashOut).toFixed(2)}x`);
+        }
+        return;
+      }
+      this.emitPanelState(socket.id);
       socket.emit('error', {
         message: 'Could not cash out, please try again',
         index: type

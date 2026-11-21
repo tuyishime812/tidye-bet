@@ -351,7 +351,7 @@ export default function Admin() {
   // Aviator actions
   const setCrashPoint = async () => {
     const value = Number(crashInput);
-    if (!Number.isFinite(value) || value < 1 || value > 6) { toast.error("Crash point must be between 1.00 and 6.00"); return; }
+    if (!Number.isFinite(value) || value < 1 || value > 6.35) { toast.error("Crash point must be between 1.00 and 6.35"); return; }
     setAviatorBusy(true);
     try {
       const data = await request("post", "/admin/crash-point", { value });
@@ -645,7 +645,7 @@ export default function Admin() {
                 <div className="head"><h2>Next round crash point</h2></div>
                 <p className="note">Set where the next flight flies away. In manual mode every round pauses at the betting phase and waits for you; otherwise this applies to the next round only and then reverts to automatic odds.{aviator.adminMode && Number(aviator.fallbackMs)>0 ? ` If you are busy, the round auto-starts with a normal random result after ${Math.round(Number(aviator.fallbackMs)/1000)} seconds.` : ""}</p>
                 <div className="inline-form" style={{ marginTop: 12 }}>
-                  <label className="field"><span>Crash at (x)</span><input className="input" type="number" step="0.01" min="1" max="6" value={crashInput} onChange={(e)=>setCrashInput(e.target.value)} /></label>
+                  <label className="field"><span>Crash at (x)</span><input className="input" type="number" step="0.01" min="1" max="6.35" value={crashInput} onChange={(e)=>setCrashInput(e.target.value)} /></label>
                   <button type="button" className="btn-primary" disabled={aviatorBusy} onClick={setCrashPoint}>{aviatorBusy?"Working...":"Set crash point"}</button>
                   <button type="button" className="btn-warn" disabled={aviatorBusy || !aviator.forcedCrashPoint} onClick={clearCrashPoint}>Clear override</button>
                   <button type="button" className={aviator.adminMode ? "btn-primary" : "btn-ghost"} disabled={aviatorBusy} onClick={()=>setManualMode(!aviator.adminMode)}>{aviator.adminMode ? "Manual mode: ON" : "Manual mode: OFF"}</button>
