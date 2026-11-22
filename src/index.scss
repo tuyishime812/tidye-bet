@@ -122,6 +122,14 @@ body {
   background: #0a0f1c;
 }
 
+/* Home page renders its own sticky header and full-bleed layout. */
+.main-container--home {
+  padding-top: 0;
+  height: auto;
+  min-height: 100%;
+  background: #07142f;
+}
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;

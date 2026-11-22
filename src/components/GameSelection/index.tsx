@@ -218,20 +218,23 @@ export default function GameSelection() {
             <div className="th-links">
               <a href="#safe">Responsible play</a>
             </div>
-            <button type="button" className="th-btn th-ghost" onClick={openLogin}>
-              Log in
-            </button>
-            <button type="button" className="th-btn th-gold" onClick={openRegister}>
-              Register
-            </button>
+            <div className="th-nav-actions">
+              <button type="button" className="th-btn th-ghost" onClick={openLogin}>
+                Log in
+              </button>
+              <button type="button" className="th-btn th-gold" onClick={openRegister}>
+                Register
+              </button>
+            </div>
           </nav>
         </div>
       </header>
 
       <main className="th-wrap">
-        <div className="th-hero">
-          <div>
-            <h1 className="th-h1">
+        <section className="th-hero" aria-labelledby="th-hero-title">
+          <div className="th-hero-copy">
+            <p className="th-eyebrow">Crash game</p>
+            <h1 className="th-h1" id="th-hero-title">
               Aviator.
               <br />
               Cash out in time.
@@ -244,13 +247,36 @@ export default function GameSelection() {
               <button type="button" className="th-btn th-gold th-lg" onClick={enterAviator}>
                 Play now
               </button>
+              <button type="button" className="th-btn th-outline th-lg" onClick={openRegister}>
+                Create account
+              </button>
+            </div>
+            <div className="th-trust" aria-label="Highlights">
+              <div className="th-trust-item">
+                <span className="th-trust-dot" aria-hidden="true" />
+                <span>Fast rounds</span>
+              </div>
+              <div className="th-trust-item">
+                <span className="th-trust-dot" aria-hidden="true" />
+                <span>Real-time multiplier</span>
+              </div>
+              <div className="th-trust-item">
+                <span className="th-trust-dot" aria-hidden="true" />
+                <span>18+ responsible play</span>
+              </div>
             </div>
           </div>
 
           <div className="th-stage" aria-label="Aviator game preview">
+            <div className="th-stage-top">
+              <span className="th-live-badge">
+                <span className="th-live-dot" aria-hidden="true" />
+                Live preview
+              </span>
+            </div>
             <div className="th-sky">
-              <div className="th-rays" />
-              <canvas ref={canvasRef} className="th-canvas" />
+              <div className="th-rays" aria-hidden="true" />
+              <canvas ref={canvasRef} className="th-canvas" aria-hidden="true" />
               <div className="th-mult" ref={multRef}>
                 <div>
                   <span ref={mvRef}>1.00x</span>
@@ -259,7 +285,7 @@ export default function GameSelection() {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         <section id="safe" className="th-section">
           <div className="th-join">
@@ -276,9 +302,9 @@ export default function GameSelection() {
 
       <footer className="th-footer">
         <div className="th-wrap th-footer-row">
-          <div>
-            <span className="th-age">18+</span>Gambling can be addictive. Only bet
-            what you can afford to lose.
+          <div className="th-footer-copy">
+            <span className="th-age">18+</span>
+            <span>Gambling can be addictive. Only bet what you can afford to lose.</span>
           </div>
           <div>© 2026 Tidye Bet</div>
         </div>

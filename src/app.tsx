@@ -142,7 +142,11 @@ function App() {
   const showUnityLoader = isAviator && isAuthenticated && authReady && !unityLoading;
 
   return (
-    <div className={`main-container${isAdmin ? " main-container--admin" : ""}`}>
+    <div
+      className={`main-container${isAdmin ? " main-container--admin" : ""}${
+        isHome ? " main-container--home" : ""
+      }`}
+    >
       {showUnityLoader && (
         <div className="myloading">
           <div className="loading-container">
