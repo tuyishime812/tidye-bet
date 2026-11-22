@@ -57,64 +57,73 @@ const Bet = ({ index, add, setAdd, canRemove, onRemove }: BetProps) => {
 	const [betOpt, setBetOpt] = React.useState<BetOptType>("20");
 	const [showModal, setShowModal] = React.useState(false);
 	const [myBetAmount, setMyBetAmount] = React.useState(20);
+	const [cashingOut, setCashingOut] = React.useState(false);
 	// const { index } = props;
 
-	const minus = (type: FieldNameType) => {
-		let value = state;
-		if (type === "betAmount") {
-			// Decrement is a whole MWK step, so compare against minBet using the
-			// same step. The old `betAmount - 0.1` check let 1.50 step down to
-			// 0.50, i.e. below the server minimum.
-			if (Number(betAmount) - 1 < minBet) {
-				value.userInfo[index][type] = minBet
-			} else {
-				value.userInfo[index][type] = Number((Number(betAmount) - 1).toFixed(2))
-			}
-		} else {
-			if (value[`${index + type}`] - 0.1 < 0.1) {
-				value[`${index + type}`] = 0.1
-			} else {
-				value[`${index + type}`] = Number((Number(value[`${index + type}`]) - 0.1).toFixed(2))
-			}
+	useEffect(() => {
+		if (!betted || GameState !== "PLAYING") {
+			setCashingOut(false);
 		}
-		update(value);
+	}, [betted, GameState]);
+
+	const minus = (type: FieldNameType) => {
+		update((prev) => {
+			if (type === "betAmount") {
+				const current = Number(prev.userInfo[index].betAmount) || 0;
+				const nextAmount = current - 1 < minBet ? minBet : Number((current - 1).toFixed(2));
+				return {
+					userInfo: {
+						...prev.userInfo,
+						[index]: { ...prev.userInfo[index], betAmount: nextAmount },
+					},
+				} as Partial<typeof prev>;
+			}
+			const key = `${index}${type}` as keyof typeof prev;
+			const current = Number(prev[key]) || 0;
+			const nextVal = current - 0.1 < 0.1 ? 0.1 : Number((current - 0.1).toFixed(2));
+			return { [key]: nextVal } as Partial<typeof prev>;
+		});
 	}
 
 	const plus = (type: FieldNameType) => {
-		let value = state;
-		if (type === "betAmount") {
-			if (value.userInfo[index][type] + 0.1 > state.userInfo.balance) {
-				value.userInfo[index][type] = Math.round(state.userInfo.balance * 100) / 100
-			} else {
-				if (value.userInfo[index][type] + 0.1 > maxBet) {
-					value.userInfo[index][type] = maxBet;
-				} else {
-					value.userInfo[index][type] = Number((Number(betAmount) + 0.1).toFixed(2))
-				}
+		update((prev) => {
+			if (type === "betAmount") {
+				const current = Number(prev.userInfo[index].betAmount) || 0;
+				const balanceNow = Number(prev.userInfo.balance) || 0;
+				let nextAmount = Number((current + 0.1).toFixed(2));
+				if (nextAmount > balanceNow) nextAmount = Math.round(balanceNow * 100) / 100;
+				if (nextAmount > maxBet) nextAmount = maxBet;
+				return {
+					userInfo: {
+						...prev.userInfo,
+						[index]: { ...prev.userInfo[index], betAmount: nextAmount },
+					},
+				} as Partial<typeof prev>;
 			}
-		} else {
-			if (value[`${index + type}`] + 0.1 > state.userInfo.balance) {
-				value[`${index + type}`] = Math.round(state.userInfo.balance * 100) / 100
-			} else {
-				value[`${index + type}`] = Number((Number(value[`${index + type}`]) + 0.1).toFixed(2))
-			}
-		}
-		update(value);
+			const key = `${index}${type}` as keyof typeof prev;
+			const current = Number(prev[key]) || 0;
+			const balanceNow = Number(prev.userInfo.balance) || 0;
+			let nextVal = Number((current + 0.1).toFixed(2));
+			if (nextVal > balanceNow) nextVal = Math.round(balanceNow * 100) / 100;
+			return { [key]: nextVal } as Partial<typeof prev>;
+		});
 	}
 
 	const manualPlus = (amount: number, btnNum: BetOptType) => {
-		let value = state
-		if (betOpt === btnNum) {
-			if (Number((betAmount + amount)) > maxBet) {
-				value.userInfo[index].betAmount = maxBet
-			} else {
-				value.userInfo[index].betAmount = Number((betAmount + amount).toFixed(2))
-			}
-		} else {
-			value.userInfo[index].betAmount = Number(Number(amount).toFixed(2))
-			setBetOpt(btnNum);
-		}
-		update(value);
+		if (betOpt !== btnNum) setBetOpt(btnNum);
+		update((prev) => {
+			const current = Number(prev.userInfo[index].betAmount) || 0;
+			const nextAmount =
+				betOpt === btnNum
+					? Math.min(maxBet, Number((current + amount).toFixed(2)))
+					: Number(Number(amount).toFixed(2));
+			return {
+				userInfo: {
+					...prev.userInfo,
+					[index]: { ...prev.userInfo[index], betAmount: nextAmount },
+				},
+			} as Partial<typeof prev>;
+		});
 	}
 
 	const changeBetType = (e: GameType) => {
@@ -123,23 +132,20 @@ const Bet = ({ index, add, setAdd, canRemove, onRemove }: BetProps) => {
 	}
 
 	const onChangeBlur = (e: number, type: 'cashOutAt' | 'decrease' | 'increase' | 'singleAmount') => {
-		let value = state;
 		if (type === "cashOutAt") {
-			if (e < 1.01) {
-				value.userInfo[index]['target'] = 1.01;
-				setCashOut(1.01);
-			} else {
-				value.userInfo[index]['target'] = Math.round(e * 100) / 100
-				setCashOut(Math.round(e * 100) / 100);
-			}
-		} else {
-			if (e < 0.1) {
-				value[`${index + type}`] = 0.1;
-			} else {
-				value[`${index + type}`] = Math.round(e * 100) / 100;
-			}
+			const next = e < 1.01 ? 1.01 : Math.round(e * 100) / 100;
+			setCashOut(next);
+			update((prev) => ({
+				userInfo: {
+					...prev.userInfo,
+					[index]: { ...prev.userInfo[index], target: next },
+				},
+			} as Partial<typeof prev>));
+			return;
 		}
-		update(value);
+		const nextVal = e < 0.1 ? 0.1 : Math.round(e * 100) / 100;
+		const key = `${index}${type}` as keyof typeof state;
+		update({ [key]: nextVal } as any);
 	}
 
 	const onBetClick = (s: boolean) => {
@@ -156,9 +162,7 @@ const Bet = ({ index, add, setAdd, canRemove, onRemove }: BetProps) => {
 		updateUserBetState({ [`${index}betState`]: s })
 	}
 	const setCount = (amount: number) => {
-		let attrs = state;
-		attrs[`${index}autoCound`] = amount;
-		update(attrs);
+		update({ [`${index}autoCound`]: amount } as any);
 	}
 
 	const reset = () => {
@@ -184,15 +188,14 @@ const Bet = ({ index, add, setAdd, canRemove, onRemove }: BetProps) => {
 				return
 			}
 		}
-		let attrs = state;
-		attrs.userInfo[index].auto = _betState;
-		update(attrs);
+		update((prev) => ({
+			userInfo: {
+				...prev.userInfo,
+				[index]: { ...prev.userInfo[index], auto: _betState },
+			},
+		} as any));
 
 		updateUserBetState({ [`${index}betState`]: _betState });
-
-		if (!state) {
-			setCount(0);
-		}
 	}
 
 	const onStartBtnClick = () => {
@@ -257,8 +260,14 @@ const Bet = ({ index, add, setAdd, canRemove, onRemove }: BetProps) => {
 										:
 										<input type="number" value={Number(myBetAmount)}
 											onChange={e => {
-												Number(e.target.value) > maxBet ? update({ ...state, userInfo: { ...state.userInfo, [`${index}`]: { ...state.userInfo[index], betAmount: maxBet } } }) : Number(e.target.value) < 0 ? update({ ...state, userInfo: { ...state.userInfo, [`${index}`]: { ...state.userInfo[index], betAmount: 0 } } }) :
-													update({ ...state, userInfo: { ...state.userInfo, [`${index}`]: { ...state.userInfo[index], betAmount: Number(e.target.value) } } });
+												const raw = Number(e.target.value);
+												const nextAmount = raw > maxBet ? maxBet : raw < 0 ? 0 : raw;
+												update((prev) => ({
+													userInfo: {
+														...prev.userInfo,
+														[`${index}`]: { ...prev.userInfo[index], betAmount: nextAmount },
+													},
+												} as any));
 											}}></input>
 									}
 								</div>
@@ -301,9 +310,17 @@ const Bet = ({ index, add, setAdd, canRemove, onRemove }: BetProps) => {
 					</div>
 					<div className="buttons-block">
 						{betted ? GameState === "PLAYING" ?
-							<button className="btn-waiting" onClick={() => { callCashOut(currentTarget, index) }}>
+							<button
+								className="btn-waiting"
+								disabled={cashingOut}
+								onClick={() => {
+									if (cashingOut) return;
+									setCashingOut(true);
+									callCashOut(currentTarget, index);
+								}}
+							>
 								<span>
-									<label>CASHOUT</label>
+									<label>{cashingOut ? "CASHING OUT..." : "CASHOUT"}</label>
 									<label className="amount">
 										<span>{Number(betAmount * currentTarget).toFixed(2)}</span>
 										<span className="currency">MWK</span>
@@ -315,7 +332,13 @@ const Bet = ({ index, add, setAdd, canRemove, onRemove }: BetProps) => {
 								<div className="btn-tooltip">Queued for next round</div>
 								<button className="btn-danger h-[70%]" onClick={() => {
 									onBetClick(false);
-									update({ ...state, [`${index}autoCound`]: 0, userInfo: { ...state.userInfo, [index]: { ...state.userInfo[index], auto: false } } })
+									update((prev) => ({
+										[`${index}autoCound`]: 0,
+										userInfo: {
+											...prev.userInfo,
+											[index]: { ...prev.userInfo[index], auto: false },
+										},
+									} as any));
 								}}><label>CANCEL</label></button>
 							</> :
 							invalidStake ?
@@ -381,7 +404,16 @@ const Bet = ({ index, add, setAdd, canRemove, onRemove }: BetProps) => {
 											<div className="input">
 												{autoCashoutState && !betState ? (
 													<input type="number"
-														onChange={(e) => { update({ ...state, userInfo: { ...state.userInfo, [`${index}`]: { ...state.userInfo[index], target: Number(e.target.value) } } }); setCashOut(Number(e.target.value)) }}
+														onChange={(e) => {
+															const next = Number(e.target.value);
+															setCashOut(next);
+															update((prev) => ({
+																userInfo: {
+																	...prev.userInfo,
+																	[`${index}`]: { ...prev.userInfo[index], target: next },
+																},
+															} as any));
+														}}
 														value={cashOut}
 														onBlur={(e) => onChangeBlur(Number(e.target.value) || 0, "cashOutAt")}
 													/>

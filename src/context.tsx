@@ -221,7 +221,7 @@ interface ContextType extends GameBetLimit, UserStatusType, GameStatusType, Auth
   }>;
   updateUserInfo: (attrs: Partial<UserType>) => void;
   setCurrentTarget(attrs: Partial<number>);
-  update(attrs: Partial<ContextDataType>);
+  update(attrs: Partial<ContextDataType> | ((prev: ContextDataType) => Partial<ContextDataType>));
   getMyBets();
   userBetState: UserStatusType;
   updateUserBetState(attrs: Partial<UserStatusType>);
@@ -369,9 +369,12 @@ export const Provider = ({ children }: any) => {
   });
 
   const [bettedUsers, setBettedUsers] = React.useState<BettedUserType[]>([]);
-  const update = (attrs: Partial<ContextDataType>) => {
-    setState({ ...state, ...attrs });
-  };
+  const update = React.useCallback((attrs: Partial<ContextDataType> | ((prev: ContextDataType) => Partial<ContextDataType>)) => {
+    setState((prev) => {
+      const next = typeof attrs === "function" ? (attrs as (prev: ContextDataType) => Partial<ContextDataType>)(prev) : attrs;
+      return { ...prev, ...next };
+    });
+  }, []);
   const [previousHand, setPreviousHand] = React.useState<UserType[]>([]);
   const [history, setHistory] = React.useState<number[]>([]);
   const [userBetState, setUserBetState] = React.useState<UserStatusType>({
@@ -418,9 +421,9 @@ export const Provider = ({ children }: any) => {
   const closeProfile = React.useCallback(() => setProfileOpen(false), []);
 
   // User info update function
-  const updateUserInfo = (attrs: Partial<UserType>) => {
-    setState({ ...state, userInfo: { ...state.userInfo, ...attrs } });
-  };
+  const updateUserInfo = React.useCallback((attrs: Partial<UserType>) => {
+    setState((prev) => ({ ...prev, userInfo: { ...prev.userInfo, ...attrs } }));
+  }, []);
 
   // ============================================
   // AUTHENTICATION
@@ -925,74 +928,99 @@ export const Provider = ({ children }: any) => {
   }, [socket, msgReceived]);
 
   React.useEffect(() => {
-    let attrs = state;
-    let betStatus = userBetState;
-
     // Guests may watch every round, but cannot bet. Prompt for login instead of
     // firing a bet the server will reject.
     if (!isAuthenticated) {
-      if (betStatus.fbetState || betStatus.sbetState || (betStatus as any).tbetState || (betStatus as any).qbetState) {
-        setUserBetState({ fbetState: false, fbetted: false, sbetState: false, sbetted: false, tbetState: false, tbetted: false, qbetState: false, qbetted: false });
+      if (
+        userBetState.fbetState ||
+        userBetState.sbetState ||
+        (userBetState as any).tbetState ||
+        (userBetState as any).qbetState
+      ) {
+        setUserBetState({
+          fbetState: false, fbetted: false,
+          sbetState: false, sbetted: false,
+          tbetState: false, tbetted: false,
+          qbetState: false, qbetted: false,
+        });
         openAuthModal("Log in or create an account to place a bet.");
       }
       return;
     }
 
-    if (gameState.GameState === "BET") {
-      const placeBetForPanel = (panelKey: 'f' | 's' | 't' | 'q') => {
-        const panel = (attrs.userInfo as any)[panelKey];
-        const panelBetState = (betStatus as any)[`${panelKey}betState`];
-        const panelBetted = (betStatus as any)[`${panelKey}betted`] || panel?.betted;
-        if (panelBetState && !panelBetted) {
-          if (panel?.auto) {
-            const autoCountKey = `${panelKey}autoCound` as keyof ContextDataType;
-            const count = (attrs as any)[autoCountKey] || 0;
-            if (count > 0) {
-              (attrs as any)[autoCountKey] = count - 1;
-            } else {
-              panel.auto = false;
-              (betStatus as any)[`${panelKey}betState`] = false;
-              return;
-            }
-          }
-          const betAmount = panel?.betAmount || 0;
-          if (attrs.userInfo.balance - betAmount < 0) {
-            toast.error("Insufficient balance");
-            if (panel) panel.auto = false;
-            (betStatus as any)[`${panelKey}betState`] = false;
-            (betStatus as any)[`${panelKey}betted`] = false;
-            update(attrs);
-            setUserBetState(betStatus);
-            return;
-          }
-          const data = {
-            betAmount: betAmount,
-            target: panel?.target || 2,
-            type: panelKey,
-            // Fallback session proof for a socket whose authenticate event was
-            // missed; the server ignores it once socket.userId is set.
-            token: localStorage.getItem("authToken") || undefined,
-            auto: panel?.auto || false,
-            // Auto-cashout is settled by the authoritative game tick on the
-            // server. A browser tab that is backgrounded or throttled can miss a
-            // multiplier, and relying on the client meant the player lost a bet
-            // they had asked to cash out.
-            autoCashout: !!(attrs as any)[`${panelKey}autoCashoutState`],
-            seed: state.seed,
-          };
-          attrs.userInfo.balance -= betAmount;
-          update(attrs);
-          socket.emit("playBet", data);
-          (betStatus as any)[`${panelKey}betState`] = false;
-          (betStatus as any)[`${panelKey}betted`] = true;
-          setUserBetState(betStatus);
+    if (gameState.GameState !== "BET") return;
+
+    const panels: Array<"f" | "s" | "t" | "q"> = ["f", "s", "t", "q"];
+    const currentState = newState || state;
+    const currentBetState = newBetState || userBetState;
+    panels.forEach((panelKey) => {
+      const panelBetState = (currentBetState as any)[`${panelKey}betState`];
+      const panelBetted =
+        (currentBetState as any)[`${panelKey}betted`] || (currentState.userInfo as any)[panelKey]?.betted;
+      if (!panelBetState || panelBetted) return;
+
+      const panel = (currentState.userInfo as any)[panelKey];
+      const autoCountKey = `${panelKey}autoCound` as keyof ContextDataType;
+      const autoCount = Number((currentState as any)[autoCountKey]) || 0;
+
+      if (panel?.auto) {
+        if (autoCount > 0) {
+          update({ [autoCountKey]: autoCount - 1 } as any);
+        } else {
+          update((prev) => ({
+            userInfo: {
+              ...prev.userInfo,
+              [panelKey]: { ...(prev.userInfo as any)[panelKey], auto: false },
+            },
+          } as any));
+          setUserBetState((prev) => ({ ...prev, [`${panelKey}betState`]: false } as any));
+          return;
         }
+      }
+
+      const betAmount = Number(panel?.betAmount) || 0;
+      const balanceNow = Number(currentState.userInfo.balance) || 0;
+      if (balanceNow - betAmount < 0) {
+        toast.error("Insufficient balance");
+        update((prev) => ({
+          userInfo: {
+            ...prev.userInfo,
+            [panelKey]: { ...(prev.userInfo as any)[panelKey], auto: false },
+          },
+        } as any));
+        setUserBetState((prev) => ({
+          ...prev,
+          [`${panelKey}betState`]: false,
+          [`${panelKey}betted`]: false,
+        } as any));
+        return;
+      }
+
+      const data = {
+        betAmount,
+        target: Number(panel?.target) || 2,
+        type: panelKey,
+        token: localStorage.getItem("authToken") || undefined,
+        auto: !!panel?.auto,
+        autoCashout: !!(currentState as any)[`${panelKey}autoCashoutState`],
+        seed: currentState.seed,
       };
-      placeBetForPanel('f');
-      placeBetForPanel('s');
-      placeBetForPanel('t');
-      placeBetForPanel('q');
-    }
+
+      // Optimistic UI: deduct balance and mark bet as placed immediately so the
+      // button responds without waiting for server round-trip.
+      update((prev) => ({
+        userInfo: {
+          ...prev.userInfo,
+          balance: Math.max(0, (Number(prev.userInfo.balance) || 0) - betAmount),
+        },
+      } as any));
+      setUserBetState((prev) => ({
+        ...prev,
+        [`${panelKey}betState`]: false,
+        [`${panelKey}betted`]: true,
+      } as any));
+      socket.emit("playBet", data);
+    });
   }, [
     gameState.GameState,
     userBetState.fbetState,
