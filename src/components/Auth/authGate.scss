@@ -8,15 +8,16 @@
 // ============================================================================
 
 .auth-gate {
-  --ag-accent: #00d4aa;
-  --ag-accent-2: #00a885;
-  --ag-blue: #0a84ff;
-  --ag-ink: #0b0f12;
-  --ag-side: #0d1119;
-  --ag-line: rgba(255, 255, 255, 0.13);
-  --ag-txt: #eef2ee;
-  --ag-mut: #93a1ad;
-  --ag-red: #ff5a4d;
+  --ag-accent: #ffc21a;
+  --ag-accent-2: #e0a800;
+  --ag-accent-text: #3a2a00;
+  --ag-blue: #4f86ff;
+  --ag-ink: #07142f;
+  --ag-side: #0b1f4d;
+  --ag-line: rgba(157, 176, 218, 0.22);
+  --ag-txt: #f2f5ff;
+  --ag-mut: #9db0da;
+  --ag-red: #ff5a5c;
 
   position: fixed;
   inset: 0;
@@ -78,8 +79,8 @@
   gap: 24px;
   padding: 44px clamp(28px, 4.5vw, 72px);
   overflow: hidden;
-  color: #eaf3ee;
-  background: linear-gradient(150deg, #08302a 0%, #10253a 52%, #241a4d 100%);
+  color: #f2f5ff;
+  background: linear-gradient(150deg, #07142f 0%, #0b1f4d 52%, #13306a 100%);
 
   // Decorative ring, echoing the mockup.
   &::after {
@@ -105,23 +106,31 @@
 
 .auth-gate__logo-mark {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 30px;
   height: 30px;
-  border-radius: 9px;
-  overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0, 212, 170, 0.35);
+  flex: none;
+
+  svg {
+    width: 28px;
+    height: 28px;
+    display: block;
+    filter: drop-shadow(0 6px 14px rgba(255, 194, 26, 0.28));
+  }
 }
 
 .auth-gate__logo-text {
   font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
   font-size: 24px;
   font-weight: 800;
-  letter-spacing: 1px;
-  color: #f2f7f3;
+  letter-spacing: 0.01em;
+  color: #f2f5ff;
 
-  strong {
+  em {
+    font-style: normal;
     color: var(--ag-accent);
-    margin-left: 4px;
+    margin-left: 2px;
   }
 }
 
@@ -176,7 +185,7 @@
     width: 28px;
     height: 28px;
     border-radius: 9px;
-    background: rgba(0, 212, 170, 0.16);
+    background: rgba(255, 194, 26, 0.16);
     color: var(--ag-accent);
     font-weight: 700;
   }
@@ -267,7 +276,7 @@
 
     &.active {
       background: var(--ag-accent);
-      color: #03211b;
+      color: var(--ag-accent-text);
     }
 
     &:not(.active):hover {
@@ -312,7 +321,7 @@
 
     &:focus {
       border-color: var(--ag-accent);
-      box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.18);
+      box-shadow: 0 0 0 3px rgba(255, 194, 26, 0.18);
     }
   }
 }
@@ -345,7 +354,7 @@
     cursor: pointer;
 
     &:hover {
-      color: #67e8d0;
+      color: #ffe082;
     }
   }
 }
@@ -410,7 +419,7 @@
   border: none;
   border-radius: 12px;
   background: linear-gradient(135deg, var(--ag-accent), var(--ag-accent-2));
-  color: #03211b;
+  color: var(--ag-accent-text);
   font-size: 16px;
   font-weight: 800;
   cursor: pointer;
@@ -442,7 +451,7 @@
     cursor: pointer;
 
     &:hover {
-      color: #67e8d0;
+      color: #ffe082;
       text-decoration: underline;
     }
   }

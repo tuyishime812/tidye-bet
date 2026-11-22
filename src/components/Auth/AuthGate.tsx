@@ -31,7 +31,7 @@ function passwordStrength(pw: string): { score: number; label: string; color: st
   if (/[^A-Za-z0-9]/.test(pw)) score += 1;
 
   const labels = ["Too weak", "Weak", "Fair", "Good", "Strong"];
-  const colors = ["#ff5a4d", "#ff5a4d", "#ffb627", "#9bd23a", "#00d4aa"];
+  const colors = ["#ff5a5c", "#ff5a5c", "#ffb627", "#9bd23a", "#2fd27a"];
   return { score, label: labels[score], color: colors[score] };
 }
 
@@ -228,20 +228,12 @@ export default function AuthGate() {
         <aside className="auth-gate__brand">
           <div className="auth-gate__logo">
             <span className="auth-gate__logo-mark" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 34 34">
-                <rect width="34" height="34" rx="9" fill="#00d4aa" />
-                <path
-                  d="M8 25 L17 8 L26 25 M12 19h10"
-                  stroke="#03211b"
-                  strokeWidth="3.4"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+              <svg viewBox="0 0 24 24" fill="#ffc21a">
+                <path d="M2 14l20-9-7 16-3.5-6.5z" />
               </svg>
             </span>
             <span className="auth-gate__logo-text">
-              Tidye <strong>Bet</strong>
+              Tidye <em>Bet</em>
             </span>
           </div>
 

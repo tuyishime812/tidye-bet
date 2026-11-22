@@ -76,7 +76,7 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #00d4aa;
+  border-color: #ffc21a;
 }
 
 .error-message {
@@ -99,13 +99,13 @@
 }
 
 .auth-btn.primary {
-  background: linear-gradient(135deg, #00d4aa 0%, #00a885 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #ffc21a 0%, #e0a800 100%);
+  color: #3a2a00;
 }
 
 .auth-btn.primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 212, 170, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 194, 26, 0.4);
 }
 
 .auth-btn.quick-play {
@@ -133,7 +133,7 @@
 }
 
 .auth-modal-toggle span {
-  color: #00d4aa;
+  color: #ffc21a;
   cursor: pointer;
   font-weight: 600;
 }
